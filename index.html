@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnnoFlowSmartLabel Pro - 图像+视频AI标注教学工具</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0d1117; color:#e6edf3; font-family:"Microsoft YaHei","PingFang SC",sans-serif; min-height:100vh; }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background:#30363d; border-radius:4px; }
+
+  /* ===== 顶栏 ===== */
+  header { display:flex; align-items:center; gap:14px; padding:10px 18px; background:#161b22; border-bottom:1px solid #30363d; flex-wrap:wrap; }
+  .logo { width:36px; height:36px; border-radius:9px; background:linear-gradient(135deg,#4cc9f0,#7b5cff); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; color:#fff; flex-shrink:0; }
+  .brand h1 { font-size:15px; font-weight:700; }
+  .brand p { font-size:11px; color:#8b949e; }
+  .levels { display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; }
+  .lv-chip { padding:4px 11px; border-radius:18px; font-size:11px; background:#21262d; border:1px solid #30363d; color:#8b949e; cursor:pointer; transition:all .2s; white-space:nowrap; }
+  .lv-chip.active { background:linear-gradient(135deg,#4cc9f0,#7b5cff); color:#fff; border-color:transparent; font-weight:700; }
+  .lv-chip.done { background:#1f6f43; color:#d2f5e0; border-color:#2ea043; }
+  .lv-chip.locked { opacity:.45; cursor:not-allowed; }
+
+  /* ===== 布局 ===== */
+  .main { display:flex; gap:12px; padding:12px; align-items:flex-start; }
+  .sidebar { width:300px; flex-shrink:0; display:flex; flex-direction:column; gap:12px; }
+  .stage { flex:1; min-width:0; }
+  .card { background:#161b22; border:1px solid #30363d; border-radius:12px; padding:12px 14px; }
+  .card h3 { font-size:12.5px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .card h3 .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+  /* ===== 按钮 ===== */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:7px 12px; border-radius:8px; border:1px solid #30363d; background:#21262d; color:#e6edf3; font-size:12px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .btn:hover { background:#30363d; border-color:#4cc9f0; }
+  .btn.primary { background:linear-gradient(135deg,#4cc9f0,#7b5cff); border:none; font-weight:700; color:#fff; }
+  .btn.primary:hover { filter:brightness(1.1); }
+  .btn.small { padding:4px 9px; font-size:11px; }
+  .btn.warn { border-color:#d73a49; color:#f85149; }
+  .btn.warn:hover { background:#3a1d20; }
+  .btn.ok { border-color:#2ea043; color:#3fb950; }
+  .btn.ok:hover { background:#15271c; }
+  .btn.block { width:100%; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+
+  /* ===== 媒体舞台 ===== */
+  .stage-card { padding:10px; }
+  .media-wrap { position:relative; background:#010409; border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; min-height:300px; }
+  .media-wrap canvas { max-width:100%; max-height:56vh; display:none; }
+  .media-wrap video { display:none; }
+  .empty-hint { color:#8b949e; font-size:13px; text-align:center; padding:60px 20px; line-height:2.1; }
+  .empty-hint b { color:#4cc9f0; }
+
+  /* ===== 控制条 ===== */
+  .controls { display:flex; align-items:center; gap:7px; margin-top:10px; flex-wrap:wrap; }
+  .ctrl-btn { width:34px; height:34px; border-radius:8px; border:1px solid #30363d; background:#21262d; color:#e6edf3; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+  .ctrl-btn:hover { background:#30363d; border-color:#4cc9f0; }
+  .ctrl-btn.play { background:linear-gradient(135deg,#4cc9f0,#7b5cff); border:none; color:#fff; font-size:16px; }
+  .time-info { font-size:12px; color:#8b949e; font-variant-numeric:tabular-nums; margin:0 4px; }
+  select { background:#21262d; color:#e6edf3; border:1px solid #30363d; border-radius:8px; padding:6px 8px; font-size:12px; }
+
+  /* ===== 时间轴 ===== */
+  .timeline { margin-top:10px; }
+  .tl-track { position:relative; height:20px; background:#21262d; border-radius:6px; cursor:pointer; }
+  .tl-progress { position:absolute; left:0; top:0; bottom:0; width:0; background:linear-gradient(90deg,rgba(76,201,240,.35),rgba(123,92,255,.35)); border-radius:6px; }
+  .tl-playhead { position:absolute; top:-3px; bottom:-3px; width:2px; background:#fff; box-shadow:0 0 6px rgba(255,255,255,.6); }
+  .tl-keyframe { position:absolute; top:50%; width:10px; height:10px; background:#ffd166; border:2px solid #0d1117; border-radius:2px; transform:translate(-50%,-50%) rotate(45deg); cursor:pointer; }
+  .tl-keyframe:hover { background:#fff; }
+  .tl-scale { position:relative; height:13px; margin-top:3px; }
+  .tl-scale span { position:absolute; font-size:9px; color:#6e7681; transform:translateX(-50%); }
+
+  /* ===== 缩略图条 ===== */
+  .thumbs { display:flex; gap:6px; margin-top:10px; overflow-x:auto; padding-bottom:4px; }
+  .thumb { position:relative; flex-shrink:0; cursor:pointer; border:2px solid #30363d; border-radius:8px; overflow:hidden; transition:all .15s; }
+  .thumb img { display:block; width:84px; height:52px; object-fit:cover; background:#000; }
+  .thumb .tf { position:absolute; bottom:2px; left:2px; background:rgba(0,0,0,.72); font-size:9px; color:#ffd166; padding:1px 4px; border-radius:4px; }
+  .thumb.current { border-color:#4cc9f0; }
+  .thumb.auto { border-color:#7b5cff; }
+  .thumb .del { position:absolute; top:2px; right:2px; width:16px; height:16px; background:rgba(217,58,73,.92); color:#fff; border:none; border-radius:50%; font-size:10px; cursor:pointer; display:none; line-height:16px; }
+  .thumb:hover .del { display:block; }
+
+  /* ===== 侧栏 ===== */
+  .cls-list { display:flex; flex-direction:column; gap:5px; }
+  .cls-item { display:flex; align-items:center; gap:8px; padding:6px 9px; border-radius:8px; background:#21262d; cursor:pointer; border:2px solid transparent; transition:all .15s; }
+  .cls-item:hover { background:#30363d; }
+  .cls-item.active { border-color:#4cc9f0; }
+  .cls-color { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+  .cls-name { font-size:12px; flex:1; }
+  .cls-count { font-size:11px; color:#8b949e; }
+  .add-cls { display:flex; gap:6px; margin-top:8px; }
+  .add-cls input { flex:1; background:#21262d; border:1px solid #30363d; color:#e6edf3; border-radius:8px; padding:7px 10px; font-size:12px; outline:none; min-width:0; }
+  .add-cls input:focus { border-color:#4cc9f0; }
+
+  /* ===== 统计 ===== */
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .stat-box { background:#21262d; border-radius:8px; padding:8px; text-align:center; }
+  .stat-box .num { font-size:17px; font-weight:800; color:#4cc9f0; }
+  .stat-box .lab { font-size:10px; color:#8b949e; margin-top:2px; }
+  .cls-bar { height:6px; background:#21262d; border-radius:3px; overflow:hidden; margin-top:8px; display:flex; }
+  .cls-bar i { display:block; height:100%; }
+  .cls-legend { font-size:10px; color:#8b949e; margin-top:6px; line-height:1.7; }
+  .cls-legend span { display:inline-flex; align-items:center; gap:4px; margin-right:9px; }
+  .cls-legend i { width:8px; height:8px; border-radius:2px; display:inline-block; }
+
+  /* ===== 教程 ===== */
+  .tut-goal { font-size:11px; color:#8b949e; background:#21262d; border-radius:8px; padding:8px 10px; margin-bottom:10px; line-height:1.6; }
+  .tut-goal b { color:#ffd166; }
+  .tut-step { display:flex; gap:9px; padding:7px 8px; border-radius:8px; margin-bottom:5px; background:#21262d; border:1px solid transparent; transition:all .2s; }
+  .tut-step.done { opacity:.55; }
+  .tut-step.now { border-color:#4cc9f0; background:#1c2a35; }
+  .tut-num { width:20px; height:20px; border-radius:50%; background:#30363d; color:#8b949e; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+  .tut-step.done .tut-num { background:#2ea043; color:#fff; }
+  .tut-step.now .tut-num { background:#4cc9f0; color:#0d1117; font-weight:800; }
+  .tut-body { flex:1; min-width:0; }
+  .tut-body b { font-size:12px; display:block; }
+  .tut-tip { font-size:11px; color:#8b949e; margin-top:3px; display:none; line-height:1.6; }
+  .tut-step.now .tut-tip { display:block; }
+
+  /* ===== 插值 ===== */
+  .interp-form { display:flex; flex-direction:column; gap:8px; margin-top:10px; background:#21262d; border-radius:8px; padding:10px; }
+  .interp-form label { font-size:11px; color:#8b949e; display:flex; align-items:center; gap:6px; }
+  .interp-form select, .interp-form input { flex:1; background:#161b22; border:1px solid #30363d; color:#e6edf3; border-radius:6px; padding:6px 8px; font-size:12px; outline:none; min-width:0; }
+  .interp-hint { font-size:10px; color:#8b949e; line-height:1.6; }
+  .interp-result { font-size:11px; color:#3fb950; margin-top:4px; }
+
+  /* ===== 导出 ===== */
+  .export-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .export-grid .btn { justify-content:center; font-size:11px; padding:8px 4px; }
+  .export-note { font-size:10px; color:#8b949e; margin-top:8px; line-height:1.7; }
+
+  /* ===== AI助手 ===== */
+  .ai-key-row { display:flex; gap:6px; margin-bottom:8px; }
+  .ai-key-row input { flex:1; background:#21262d; border:1px solid #30363d; color:#e6edf3; border-radius:8px; padding:7px 10px; font-size:11px; outline:none; min-width:0; font-family:monospace; }
+  .ai-key-row input:focus { border-color:#4cc9f0; }
+  .ai-key-status { font-size:10px; color:#8b949e; margin-bottom:8px; line-height:1.5; }
+  .ai-key-status.ok { color:#3fb950; }
+  .ai-key-status.err { color:#f85149; }
+  .ai-actions { display:flex; flex-direction:column; gap:6px; }
+  .ai-actions .btn { justify-content:flex-start; font-size:11.5px; padding:8px 10px; text-align:left; }
+  .ai-input { width:100%; background:#21262d; border:1px solid #30363d; color:#e6edf3; border-radius:8px; padding:8px 10px; font-size:12px; outline:none; resize:vertical; min-height:52px; font-family:inherit; line-height:1.6; margin-top:8px; }
+  .ai-input:focus { border-color:#4cc9f0; }
+  .ai-output { margin-top:8px; background:#21262d; border-radius:8px; padding:10px; font-size:11px; line-height:1.8; color:#d2e6f5; white-space:pre-wrap; word-break:break-word; max-height:240px; overflow-y:auto; display:none; }
+  .ai-output.show { display:block; }
+  .ai-loading { display:none; align-items:center; gap:8px; font-size:11px; color:#4cc9f0; margin-top:8px; }
+  .ai-loading.show { display:flex; }
+  .ai-spin { width:13px; height:13px; border:2px solid rgba(76,201,240,.3); border-top-color:#4cc9f0; border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ===== Toast ===== */
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:#21262d; border:1px solid #4cc9f0; color:#e6edf3; padding:11px 20px; border-radius:10px; font-size:13px; z-index:999; opacity:0; transition:all .3s; box-shadow:0 8px 30px rgba(0,0,0,.5); max-width:80vw; }
+  #toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+
+  /* ===== 弹窗 ===== */
+  .modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.62); z-index:998; display:none; align-items:center; justify-content:center; }
+  .modal-mask.show { display:flex; }
+  .modal { background:#161b22; border:1px solid #4cc9f0; border-radius:16px; padding:26px 32px; text-align:center; max-width:400px; width:92%; animation:pop .25s; }
+  @keyframes pop { from { transform:scale(.82); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .modal .big { font-size:42px; margin-bottom:10px; }
+  .modal h2 { font-size:18px; margin-bottom:8px; color:#4cc9f0; }
+  .modal p { font-size:12px; color:#8b949e; line-height:1.8; margin-bottom:16px; }
+  .modal .btn { font-size:13px; padding:9px 26px; }
+
+  .tip-line { font-size:11px; color:#8b949e; margin-top:8px; line-height:1.7; }
+  .kbd { background:#21262d; border:1px solid #30363d; border-bottom-width:2px; border-radius:4px; padding:1px 6px; font-size:10px; color:#ffd166; }
+  .mode-tabs { display:flex; gap:6px; margin-bottom:10px; }
+  .mode-tab { flex:1; text-align:center; padding:8px; border-radius:8px; background:#21262d; border:1px solid #30363d; font-size:12px; cursor:pointer; transition:all .2s; }
+  .mode-tab.active { background:linear-gradient(135deg,#4cc9f0,#7b5cff); border-color:transparent; color:#fff; font-weight:700; }
+  .hidden { display:none !important; }
+  .sub-tip { font-size:10px; color:#6e7681; margin-top:4px; line-height:1.6; }
+  .beta-banner {
+    background: linear-gradient(90deg, #3a2a12, #5a3a12);
+    color: #ffd166;
+    font-size: 12px;
+    padding: 7px 16px;
+    text-align: center;
+    border-bottom: 1px solid #6b4a1f;
+  }
+  @media (max-width:900px) { .main { flex-direction:column; } .sidebar { width:100%; } }
+</style>
+</head>
+<body>
+
+
+
+<div class="beta-banner">⚙️ 测试阶段 (v1.0-beta)：核心流程可用，边缘场景持续打磨中 · 遇到问题欢迎反馈</div>
+
+<header>
+  <div class="logo">A</div>
+  <div class="brand">
+    <h1>AnnoFlowSmartLabel Pro</h1>
+    <p>图像 + 视频 · AI 数据标注教学工具 · 对标 LabelStudio / CVAT</p>
+  </div>
+  <div class="levels" id="levelChips"></div>
+</header>
+
+<div class="main">
+  <!-- ===== 侧栏 ===== -->
+  <div class="sidebar">
+    <div class="card">
+      <h3><span class="dot" style="background:#ffd166;"></span>数据源</h3>
+      <div class="mode-tabs">
+        <div class="mode-tab active" id="tabVideo" onclick="switchMode('video')">📹 视频标注</div>
+        <div class="mode-tab" id="tabImage" onclick="switchMode('image')">🖼 图片标注</div>
+        <div class="mode-tab" id="tabAudio" onclick="switchMode('audio')">🎙 音频标注</div>
+        <div class="mode-tab" id="tabText" onclick="switchMode('text')">📝 文本标注</div>
+      </div>
+      <div id="videoSrc">
+        <button class="btn primary block" onclick="document.getElementById('fileVideo').click()">📁 选择视频文件</button>
+        <input type="file" id="fileVideo" accept="video/*" class="hidden">
+        <button class="btn block" style="margin-top:6px;" onclick="loadDemoVideo()">✨ 加载内置示例视频</button>
+        <div class="sub-tip">示例视频由浏览器实时生成(移动的小轿车+小球),无需联网</div>
+      </div>
+      <div id="imageSrc" class="hidden">
+        <button class="btn primary block" onclick="document.getElementById('fileImage').click()">📁 选择图片文件</button>
+        <input type="file" id="fileImage" accept="image/*" class="hidden">
+        <div class="sub-tip">图片模式同样支持框选、8方向拖拽调整、导出标准格式</div>
+      </div>
+      <div id="audioSrc" class="hidden">
+        <button class="btn primary block" onclick="document.getElementById('fileAudio').click()">📁 选择音频文件</button>
+        <input type="file" id="fileAudio" accept="audio/*" class="hidden">
+        <button class="btn block" style="margin-top:6px;" onclick="loadDemoAudio()">✨ 加载内置示例语音</button>
+        <div class="sub-tip">音频标注: 在波形上拖选时间段→选类别→填转写文字, 对标 Label Studio</div>
+      </div>
+      <div id="textSrc" class="hidden">
+        <button class="btn primary block" onclick="document.getElementById('fileText').click()">📁 选择文本文件</button>
+        <input type="file" id="fileText" accept=".txt,.csv,text/plain" class="hidden">
+        <button class="btn block" style="margin-top:6px;" onclick="loadDemoText()">✨ 加载内置示例文本</button>
+        <div class="sub-tip">文本标注: 拖选文本打实体标签(NER) + 整段分类, 支持BIO格式导出</div>
+      </div>
+      <div style="margin-top:12px;border-top:1px solid #233050;padding-top:12px">
+        <button class="btn block ghost" onclick="toggleLib()">🌐 在线素材库 · 免费素材站（不用自己找）</button>
+        <div id="libPanel" style="display:none;margin-top:10px">
+          <div class="sub-tip" style="margin-bottom:8px">从下面素材站免费下载练习素材，回本工具点「选择文件」导入即可开标。全部免费、多数无需登录：</div>
+          <div style="font-size:12.5px;line-height:1.9">
+            <div>🖼 <b style="color:#d1fae5">图片</b>：
+              <a href="https://unsplash.com" target="_blank" rel="noopener" style="color:#34d399">Unsplash</a> ·
+              <a href="https://www.pexels.com/zh-cn/" target="_blank" rel="noopener" style="color:#34d399">Pexels</a> ·
+              <a href="https://pixabay.com/zh/" target="_blank" rel="noopener" style="color:#34d399">Pixabay</a>
+            </div>
+            <div>🎬 <b style="color:#d1fae5">视频</b>：
+              <a href="https://www.pexels.com/zh-cn/videos/" target="_blank" rel="noopener" style="color:#34d399">Pexels视频</a> ·
+              <a href="https://pixabay.com/zh/videos/" target="_blank" rel="noopener" style="color:#34d399">Pixabay视频</a>
+            </div>
+            <div>🎙 <b style="color:#d1fae5">音频</b>：
+              <a href="https://freesound.org" target="_blank" rel="noopener" style="color:#34d399">Freesound</a> ·
+              <a href="https://pixabay.com/zh/sound-effects/" target="_blank" rel="noopener" style="color:#34d399">Pixabay音效</a>
+            </div>
+            <div>📄 <b style="color:#d1fae5">文本/数据集</b>：
+              <a href="https://www.kaggle.com/datasets" target="_blank" rel="noopener" style="color:#34d399">Kaggle数据集</a> ·
+              <a href="https://huggingface.co/datasets" target="_blank" rel="noopener" style="color:#34d399">Hugging Face数据集</a>
+            </div>
+          </div>
+          <div class="sub-tip" style="margin-top:8px;color:#fdba74">💡 找不到合适素材时，点上面的「加载内置示例」也能直接开练（浏览器实时生成，无需联网）。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#3fb950;"></span>标注类别</h3>
+      <div class="cls-list" id="clsList"></div>
+      <div class="add-cls">
+        <input id="newClsName" placeholder="新类别,如:行人" maxlength="12">
+        <button class="btn" onclick="addClass()">添加</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#f85149;"></span>标注统计</h3>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="num" id="stBoxes">0</div><div class="lab">当前帧框数</div></div>
+        <div class="stat-box"><div class="num" id="stTotal">0</div><div class="lab">总标注数</div></div>
+        <div class="stat-box"><div class="num" id="stKf">0</div><div class="lab">关键帧数</div></div>
+        <div class="stat-box"><div class="num" id="stInterp">0</div><div class="lab">插值生成</div></div>
+      </div>
+      <div class="cls-bar" id="clsBar"></div>
+      <div class="cls-legend" id="clsLegend"></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#7b5cff;"></span>教学模式 · <span id="lvName"></span></h3>
+      <div class="tut-goal" id="tutGoal"></div>
+      <div id="tutSteps"></div>
+      <div class="tip-line">快捷键: <span class="kbd">空格</span>播放/暂停 · <span class="kbd">←→</span>逐帧 · <span class="kbd">Del</span>删框</div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:#4cc9f0;"></span>AI 智能助手</h3>
+      <div class="ai-cfg-label">① 接口地址(OpenAI兼容,默认DeepSeek)</div>
+      <div class="ai-cfg-row">
+        <input type="text" id="aiApi" value="https://api.deepseek.com/v1" placeholder="https://api.deepseek.com/v1">
+      </div>
+      <div class="ai-cfg-label">② 模型名(默认 deepseek-chat,可换 gpt-4o-mini / kimi / glm 等)</div>
+      <div class="ai-cfg-row">
+        <input type="text" id="aiModel" value="deepseek-chat" placeholder="deepseek-chat">
+      </div>
+      <div class="ai-cfg-label">③ API Key(存本机浏览器,不上传)</div>
+      <div class="ai-key-row">
+        <input type="password" id="aiKey" placeholder="粘贴你的 API Key">
+        <button class="btn small" onclick="saveAiKey()">保存</button>
+      </div>
+      <div class="ai-key-status" id="aiKeyStatus"></div>
+      <div class="ai-actions">
+        <button class="btn" onclick="aiQuick('report')">📊 生成标注质检报告</button>
+        <button class="btn" onclick="aiQuick('guide')">📋 生成项目标注规范</button>
+        <button class="btn" onclick="aiQuick('teach')">🎓 讲解标注术语</button>
+      </div>
+      <textarea class="ai-input" id="aiInput" placeholder="或直接输入你想让 AI 做的事,比如:检查我的标注有没有问题"></textarea>
+      <button class="btn primary block" style="margin-top:6px;" onclick="aiAsk()">🚀 发送给 AI</button>
+      <div class="ai-loading" id="aiLoading"><div class="ai-spin"></div><span>AI 思考中,约 5-15 秒…</span></div>
+      <div class="ai-output" id="aiOutput"></div>
+    </div>
+  </div>
+
+  <!-- ===== 主舞台 ===== -->
+  <div class="stage">
+    <div class="card stage-card">
+      <div class="media-wrap" id="mediaWrap">
+        <video id="videoPlayer" preload="auto" muted></video>
+        <canvas id="annoCanvas"></canvas>
+        <div id="audioWrap" style="width:100%;display:none;">
+          <div class="audio-head" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
+            <span style="font-size:13px;font-weight:700;" id="audioTitle">🎙 音频标注</span>
+            <span style="font-size:11px;color:#8b949e;" id="audioDur"></span>
+          </div>
+          <canvas id="audioWav" style="width:100%;height:150px;display:block;cursor:crosshair;background:#010409;"></canvas>
+          <div style="font-size:10px;color:#6e7681;padding:4px 12px;">💡 在波形上按住鼠标左键拖选一段 → 选类别 → 在下方填转写文字 → 点「确认片段」</div>
+        </div>
+        <div class="empty-hint" id="emptyHint">
+          👋 欢迎使用 <b>AnnoFlowSmartLabel Pro</b><br>
+          点击左侧 <b>「选择视频文件」</b> 上传视频<br>
+          或点 <b>「加载内置示例视频」</b> 立即开始练习
+        </div>
+      </div>
+
+      <div class="controls" id="controlBar">
+        <button class="ctrl-btn play" id="btnPlay" onclick="togglePlay()" title="播放/暂停(空格)">▶</button>
+        <button class="ctrl-btn" onclick="stepFrame(-1)" title="上一帧(←)">⏪</button>
+        <button class="ctrl-btn" onclick="stepFrame(1)" title="下一帧(→)">⏩</button>
+        <span class="time-info" id="timeInfo">00:00.00 / 00:00.00</span>
+        <select id="speedSel" onchange="setSpeed()">
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+        <button class="btn small ok" onclick="addKeyframe()">★ 设关键帧</button>
+        <button class="btn small" onclick="saveFrameBoxes()">💾 保存当前帧</button>
+        <button class="btn small warn" onclick="deleteSelectedBox()">🗑 删选中框</button>
+      </div>
+
+      <div class="timeline" id="timelineWrap">
+        <div class="tl-track" id="tlTrack">
+          <div class="tl-progress" id="tlProgress"></div>
+          <div class="tl-playhead" id="tlPlayhead"></div>
+        </div>
+        <div class="tl-scale" id="tlScale"></div>
+      </div>
+
+      <div class="thumbs" id="thumbList"></div>
+
+      <div id="audioPanel" style="display:none;margin-top:12px;">
+        <div class="audio-panel-inner" style="background:#1b2230;border-radius:10px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:13px;font-weight:700;">🎯 音频片段标注</span>
+            <span style="font-size:11px;color:#8b949e;" id="audioSegCount"></span>
+          </div>
+          <div id="audioPendingBar" style="display:none;background:#2d2500;border:1px solid #ffd166;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+            <div style="font-size:12px;font-weight:700;color:#ffd166;margin-bottom:8px;" id="audioPendingInfo">待确认片段</div>
+            <input type="text" id="audioSegText" placeholder="转写文字/备注(如: 欢迎光临,请问需要什么) 可留空" style="width:100%;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:7px 10px;font-size:12px;outline:none;margin-bottom:8px;">
+            <div style="display:flex;gap:8px;">
+              <button class="btn ok small" onclick="confirmAudioSeg()">✅ 确认片段</button>
+              <button class="btn small" onclick="cancelAudioSeg()">取消</button>
+            </div>
+          </div>
+          <div id="audioSegList" style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <div id="textPanel" style="display:none;margin-top:12px;">
+        <div class="text-panel-inner" style="background:#1b2230;border-radius:10px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:13px;font-weight:700;">📝 文本标注 (NER + 分类)</span>
+            <span style="font-size:11px;color:#8b949e;" id="textEntCount"></span>
+          </div>
+          <div class="text-box" id="textBox" style="background:#0d1524;border:1px solid #30363d;border-radius:8px;padding:12px 14px;font-size:14px;line-height:2;cursor:text;user-select:text;white-space:pre-wrap;word-break:break-word;"></div>
+          <div style="font-size:10px;color:#6e7681;margin-top:6px;">💡 用鼠标在文本上拖选一段 → 弹出标签输入框,输入实体类型(如:人名/地名/机构) → 点「标注」;点已标注的彩色文字可取消</div>
+          <div id="textPending" style="display:none;background:#2d2500;border:1px solid #ffd166;border-radius:8px;padding:10px 12px;margin-top:10px;">
+            <div style="font-size:12px;font-weight:700;color:#ffd166;margin-bottom:8px;" id="textPendingSel">选中的文本</div>
+            <input type="text" id="textEntLabel" placeholder="实体类型,如:人名" style="width:100%;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:7px 10px;font-size:12px;outline:none;margin-bottom:8px;">
+            <div style="display:flex;gap:8px;">
+              <button class="btn ok small" onclick="confirmTextEnt()">✅ 标注该实体</button>
+              <button class="btn small" onclick="cancelTextEnt()">取消</button>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <div style="font-size:12px;font-weight:700;color:#a5b8e8;margin-bottom:6px;">🏷 整段文本分类(可选)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;" id="textClsBar"></div>
+          </div>
+          <div id="textEntList" style="display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:200px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3><span class="dot" style="background:#ffd166;"></span>关键帧管理 &amp; AI 插值 (Track Mode)</h3>
+      <div class="interp-form" id="interpForm">
+        <label>起点帧 <select id="interpStart"></select></label>
+        <label>终点帧 <select id="interpEnd"></select></label>
+        <label>track_id <input id="interpTrack" type="number" min="1" value="1"></label>
+        <button class="btn primary" onclick="doInterpolate()">⚡ AI 插值生成中间帧(8帧)</button>
+        <div class="interp-hint">先标好起点帧和终点帧里<strong>同一个目标</strong>(track_id 相同),插值自动补全中间帧。插值帧以紫色虚线框标记。</div>
+        <div class="interp-result" id="interpResult"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3><span class="dot" style="background:#58a6ff;"></span>导出标准格式</h3>
+      <div class="export-grid">
+        <button class="btn" onclick="exportJSON()">JSON(全量)</button>
+        <button class="btn" onclick="exportYOLO()">YOLO(当前帧)</button>
+        <button class="btn" onclick="exportCOCO()">COCO(全量)</button>
+        <button class="btn" onclick="exportMOT()">MOT(视频跟踪)</button>
+        <button class="btn" onclick="exportAudio()">🎙 音频标注(ASR)</button>
+        <button class="btn" onclick="exportText()">📝 文本标注(NER)</button>
+        <button class="btn" onclick="exportBIO()">🧬 BIO序列(实体标注)</button>
+      </div>
+      <div class="export-note">YOLO: class x_center y_center w h(归一化) · COCO: 标准bbox · MOT: 帧号,track_id,x,y,w,h,-1×4(25fps) · 音频: label+起止秒+转写(ASR) · 文本: 实体起止+类别 · BIO: NER训练黄金格式(B-xxx/I-xxx/O)。导出即解锁高级考核项。</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div class="modal-mask" id="levelModal">
+  <div class="modal">
+    <div class="big" id="modalIcon">🎉</div>
+    <h2 id="modalTitle">等级完成!</h2>
+    <p id="modalText"></p>
+    <button class="btn primary" onclick="closeModal()">继续学习</button>
+  </div>
+</div>
+<script>
+"use strict";
+
+/* ============================================================
+ * AnnoFlowSmartLabel Pro - 纯前端单文件版
+ * 视频/图片标注 + 关键帧 + AI插值 + 4级闯关教学 + 标准格式导出 + DeepSeek AI助手
+ * ============================================================ */
+
+/* ---------- 全局状态 ---------- */
+var state = {
+  mode: "video",            // video | image
+  mediaW: 0, mediaH: 0,     // 媒体逻辑尺寸
+  videoName: "",
+  imageObj: null,
+  currentTime: 0,
+  classes: [
+    { id: 1, name: "小轿车", color: "#4cc9f0" },
+    { id: 2, name: "行人", color: "#ffd166" },
+    { id: 3, name: "球类", color: "#3fb950" },
+    { id: 4, name: "其他", color: "#f85149" }
+  ],
+  currentClsId: 1,
+  boxes: [],                // 当前帧编辑中的框 [{id,clsId,trackId,x,y,w,h,auto}]
+  annotations: {},          // 视频: "12.34" -> [boxes]; 图片: "image" -> [boxes]
+  keyframes: [],            // [{time, thumb, auto}]
+  audioSegs: [],            // 音频片段 [{id,clsId,start,end,text}]
+  audioName: "",
+  audioDur: 0,
+  audioSel: null,           // 波形拖选 {start,end}
+  audioPending: null,       // 待确认片段 {start,end}
+  textContent: "",          // 文本内容
+  textEnts: [],             // 文本实体 [{id,start,end,text,label}]
+  textClsId: null,          // 整段文本分类(类别id)
+  textSel: null,            // 待标注选区 {start,end}
+  selectedBoxId: null,
+  drag: null,               // 拖拽状态
+  trackCounter: 2,
+  interpCount: 0,
+  level: 1,                 // 当前等级 1-4
+  unlocked: 1,              // 已解锁最高等级
+  prog: {                   // 每级动作计数
+    1: { play: false, step: false, box: 0, save: 0 },
+    2: { box: 0, keyframe: 0 },
+    3: { interp: 0 },
+    4: { box: 0, interp: 0, export: 0 }
+  },
+  completed: {},
+  boxIdSeq: 1
+};
+
+var LEVELS = [
+  { id:1, name:"视频标注初体验", icon:"🌱",
+    goal:"认识视频标注界面,学会播放/暂停/逐帧定位,标注并保存第一个框",
+    steps:[
+      { name:"打开一个视频项目", tip:"点左侧「选择视频文件」上传本地视频,或点「加载内置示例视频」立即开练" },
+      { name:"播放与暂停", tip:"点 ▶ 按钮或按空格键播放/暂停,熟悉视频节奏" },
+      { name:"逐帧定位", tip:"点 ⏪⏩ 或按键盘 ←→ 方向键逐帧移动,找到目标最清晰的那一帧" },
+      { name:"标注第一个框", tip:"在「标注类别」选好类别,在画面上按住鼠标左键从目标左上角拖到右下角,松开即生成框" },
+      { name:"保存标注", tip:"点「保存当前帧」,标注会随帧号存入工程" }
+    ],
+    check:function(p){ return p.play && p.step && p.box>=1 && p.save>=1; } },
+  { id:2, name:"关键帧标注", icon:"📘",
+    goal:"理解关键帧概念,学会设关键帧并在关键帧上完整标注",
+    steps:[
+      { name:"设 2 个关键帧", tip:"播放到某画面点「★ 设关键帧」,画面生成缩略图存到下方时间轴,至少设 2 个" },
+      { name:"在第 1 个关键帧标注", tip:"点击缩略图跳到该帧,把画面里的目标全部框出来" },
+      { name:"在第 2 个关键帧标注", tip:"同样跳到第 2 个关键帧标注目标,记住每个目标的 track_id" }
+    ],
+    check:function(p){ return state.keyframes.length>=2 && p.box>=2; } },
+  { id:3, name:"目标跟踪与 AI 插值", icon:"📗",
+    goal:"只标注关键帧,让 AI 自动补全中间帧 —— 视频标注效率提升 5-10 倍",
+    steps:[
+      { name:"起终点标同一目标", tip:"在第 1 个关键帧框住目标A(track_id 默认1),跳到第 2 个关键帧框住同一个目标A" },
+      { name:"填写插值参数", tip:"在「关键帧管理 & AI 插值」面板选择起点帧、终点帧,track_id 保持一致" },
+      { name:"执行插值", tip:"点「⚡ AI 插值生成中间帧」,中间 8 帧的框自动按线性插值补全(紫色虚线框)" },
+      { name:"验证插值结果", tip:"按 ▶ 播放检查,中间帧的框应该平滑跟随目标" }
+    ],
+    check:function(p){ return p.interp>=1; } },
+  { id:4, name:"复杂场景考核", icon:"🚀",
+    goal:"多目标 + 跨帧跟踪 + 导出标准格式,独立完成完整视频标注任务",
+    steps:[
+      { name:"标注 ≥3 个目标", tip:"在关键帧里标注至少 3 个不同目标(可添加类别区分)" },
+      { name:"完成一次插值", tip:"再次执行一次 AI 插值,让中间帧自动补全" },
+      { name:"导出 MOT 格式", tip:"点「MOT(视频跟踪)」导出跟踪格式文件,验证跨帧轨迹完整性" },
+      { name:"导出 COCO 或 YOLO", tip:"再导出一份 COCO 或 YOLO,证明熟悉主流数据集格式" }
+    ],
+    check:function(p){ return p.box>=3 && p.interp>=1 && p.export>=1; } }
+];
+
+/* ---------- DOM ---------- */
+var videoEl, canvas, ctx, mediaWrap, emptyHint, toastEl;
+var audioEl, audioCtx, audioBuf, audioWav, audioSrc, audioAnalyser, audioRAF, audioWrap;
+
+function init() {
+  videoEl = document.getElementById("videoPlayer");
+  canvas = document.getElementById("annoCanvas");
+  ctx = canvas.getContext("2d");
+  mediaWrap = document.getElementById("mediaWrap");
+  emptyHint = document.getElementById("emptyHint");
+  toastEl = document.getElementById("toast");
+  audioEl = document.createElement("audio");
+  audioEl.preload = "auto";
+  audioWrap = document.getElementById("audioWrap");
+  audioWav = document.getElementById("audioWav");
+  bindMediaEvents();
+  bindCanvasEvents();
+  bindKeyboard();
+  bindAudioEvents();
+  bindWaveEvents();
+  bindTextEvents();
+  loadSaved();
+  loadAiCfgUI();
+  renderAll();
+  renderLevels();
+}
+
+/* ---------- 持久化(不含视频文件本体) ---------- */
+var SAVE_KEY = "annoflow_pro_data_v1";
+function loadSaved() {
+  try {
+    var d = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+    if (!d) return;
+    if (d.classes) state.classes = d.classes;
+    if (d.annotations) state.annotations = d.annotations;
+    if (d.keyframes) state.keyframes = d.keyframes.filter(function(k){ return k && typeof k.time === "number"; });
+    if (d.unlocked) state.unlocked = d.unlocked;
+    if (d.prog) state.prog = d.prog;
+    if (d.completed) state.completed = d.completed;
+    if (d.interpCount) state.interpCount = d.interpCount;
+    if (d.audioSegs) state.audioSegs = d.audioSegs;
+    if (d.audioName) state.audioName = d.audioName;
+    if (d.audioDur) state.audioDur = d.audioDur;
+    if (d.textContent) state.textContent = d.textContent;
+    if (d.textEnts) state.textEnts = d.textEnts;
+    if (d.textClsId !== undefined && d.textClsId !== null) state.textClsId = d.textClsId;
+    state.level = Math.min(state.unlocked, 4);
+  } catch (e) {}
+}
+function saveState() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      classes: state.classes,
+      annotations: state.annotations,
+      keyframes: state.keyframes.map(function(k){ return { time: k.time, thumb: k.thumb || "", auto: !!k.auto }; }),
+      unlocked: state.unlocked,
+      prog: state.prog,
+      completed: state.completed,
+      interpCount: state.interpCount,
+      audioSegs: state.audioSegs,
+      audioName: state.audioName,
+      audioDur: state.audioDur,
+      textContent: state.textContent,
+      textEnts: state.textEnts,
+      textClsId: state.textClsId
+    }));
+  } catch (e) { console.log("存储已满,跳过缩略图持久化", e); }
+}
+</script>
+<script>
+"use strict";
+/* ---------- 媒体事件绑定 ---------- */
+function bindMediaEvents() {
+  document.getElementById("fileVideo").addEventListener("change", function(e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var url = URL.createObjectURL(f);
+    loadVideo(url, f.name);
+  });
+  document.getElementById("fileImage").addEventListener("change", function(e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var url = URL.createObjectURL(f);
+    loadImage(url, f.name);
+  });
+  document.getElementById("fileAudio").addEventListener("change", function(e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var url = URL.createObjectURL(f);
+    loadAudio(url, f.name);
+  });
+  document.getElementById("fileText").addEventListener("change", function(e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+      loadText(String(reader.result || ""));
+    };
+    reader.readAsText(f, "utf-8");
+  });
+
+  videoEl.addEventListener("loadedmetadata", function() {
+    state.mediaW = videoEl.videoWidth || 640;
+    state.mediaH = videoEl.videoHeight || 360;
+    resizeCanvas();
+    draw();
+  });
+  videoEl.addEventListener("seeked", function() {
+    state.currentTime = videoEl.currentTime;
+    loadFrameBoxes();
+    draw();
+    renderThumbs();
+    renderTimeline();
+  });
+  videoEl.addEventListener("timeupdate", function() {
+    if (!videoEl.paused) {
+      state.currentTime = videoEl.currentTime;
+      draw();
+      renderTimeline();
+    }
+  });
+  videoEl.addEventListener("ended", function() {
+    document.getElementById("btnPlay").textContent = "▶";
+  });
+}
+
+function bindAudioEvents() {
+  audioEl.addEventListener("timeupdate", function() {
+    if (!audioEl.paused) {
+      document.getElementById("timeInfo").textContent = fmtTime(audioEl.currentTime) + " / " + fmtTime(state.audioDur);
+      drawWave();
+    }
+  });
+  audioEl.addEventListener("ended", function() {
+    document.getElementById("btnPlay").textContent = "▶";
+    drawWave();
+  });
+  audioEl.addEventListener("play", function() {
+    document.getElementById("btnPlay").textContent = "⏸";
+  });
+  audioEl.addEventListener("pause", function() {
+    document.getElementById("btnPlay").textContent = "▶";
+  });
+}
+
+function toggleLib() {
+  var p = document.getElementById("libPanel");
+  if (p) p.style.display = (p.style.display === "none") ? "block" : "none";
+}
+
+function switchMode(m) {
+  state.mode = m;
+  document.getElementById("tabVideo").classList.toggle("active", m === "video");
+  document.getElementById("tabImage").classList.toggle("active", m === "image");
+  document.getElementById("tabAudio").classList.toggle("active", m === "audio");
+  document.getElementById("tabText").classList.toggle("active", m === "text");
+  document.getElementById("videoSrc").classList.toggle("hidden", m !== "video");
+  document.getElementById("imageSrc").classList.toggle("hidden", m !== "image");
+  document.getElementById("audioSrc").classList.toggle("hidden", m !== "audio");
+  document.getElementById("textSrc").classList.toggle("hidden", m !== "text");
+  videoEl.pause();
+  audioEl.pause();
+  document.getElementById("btnPlay").textContent = "▶";
+  if (m === "video" && state.videoName) loadFrameBoxes();
+  if (m === "image" && state.imageObj) loadFrameBoxes();
+  if (m === "audio" && state.audioName) drawWave();
+  if (m === "text" && state.textContent) renderText();
+  draw();
+  renderAll();
+}
+
+function loadVideo(url, name) {
+  emptyHint.style.display = "none";
+  state.mode = "video";
+  state.videoName = (name || "video").replace(/\.[^.]+$/, "");
+  videoEl.src = url;
+  videoEl.style.display = "none";
+  canvas.style.display = "block";
+  document.getElementById("btnPlay").textContent = "▶";
+  document.getElementById("tabVideo").classList.add("active");
+  document.getElementById("tabImage").classList.remove("active");
+  document.getElementById("videoSrc").classList.remove("hidden");
+  document.getElementById("imageSrc").classList.add("hidden");
+  showToast("视频已加载: " + state.videoName);
+}
+
+function loadImage(url, name) {
+  var img = new Image();
+  img.onload = function() {
+    emptyHint.style.display = "none";
+    state.mode = "image";
+    state.mediaW = img.width;
+    state.mediaH = img.height;
+    state.currentTime = 0;
+    videoEl.pause();
+    videoEl.style.display = "none";
+    canvas.style.display = "block";
+    state.imageObj = img;
+    resizeCanvas();
+    loadFrameBoxes();
+    draw();
+    renderAll();
+    showToast("图片已加载: " + (name || "image"));
+  };
+  img.src = url;
+}
+
+function resizeCanvas() {
+  canvas.width = state.mediaW;
+  canvas.height = state.mediaH;
+  var wrapW = mediaWrap.clientWidth - 4;
+  if (state.mediaW > wrapW) {
+    var ratio = wrapW / state.mediaW;
+    canvas.style.width = Math.floor(wrapW) + "px";
+    canvas.style.height = Math.floor(state.mediaH * ratio) + "px";
+  } else {
+    canvas.style.width = state.mediaW + "px";
+    canvas.style.height = state.mediaH + "px";
+  }
+}
+
+/* ---------- 音频标注 ---------- */
+function loadAudio(url, name) {
+  emptyHint.style.display = "none";
+  state.mode = "audio";
+  state.audioName = (name || "audio").replace(/\.[^.]+$/, "");
+  audioEl.src = url;
+  audioEl.style.display = "none";
+  canvas.style.display = "none";
+  videoEl.pause();
+  audioEl.pause();
+  audioWrap.style.display = "block";
+  document.getElementById("audioTitle").textContent = "🎙 " + state.audioName;
+  document.getElementById("btnPlay").textContent = "▶";
+  document.getElementById("tabVideo").classList.remove("active");
+  document.getElementById("tabImage").classList.remove("active");
+  document.getElementById("tabAudio").classList.add("active");
+  document.getElementById("videoSrc").classList.add("hidden");
+  document.getElementById("imageSrc").classList.add("hidden");
+  document.getElementById("audioSrc").classList.remove("hidden");
+  audioEl.addEventListener("loadedmetadata", function() {
+    state.audioDur = audioEl.duration || 0;
+    document.getElementById("audioDur").textContent = fmtTime(0) + " / " + fmtTime(state.audioDur);
+    document.getElementById("timeInfo").textContent = fmtTime(0) + " / " + fmtTime(state.audioDur);
+    // 解析波形
+    decodeWave(url);
+  }, { once: true });
+  showToast("音频已加载: " + state.audioName + " · 在波形上拖选时间段进行标注");
+}
+
+function decodeWave(url) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    fetch(url).then(function(r) { return r.arrayBuffer(); }).then(function(buf) {
+      return audioCtx.decodeAudioData(buf);
+    }).then(function(ab) {
+      audioBuf = ab;
+      drawWave();
+    }).catch(function() {
+      // 降级: 用时间刻度空波形
+      drawWave();
+    });
+  } catch (e) { drawWave(); }
+}
+
+function wavX(t) {
+  var w = audioWav.clientWidth || 640;
+  return (state.audioDur ? t / state.audioDur : 0) * w;
+}
+function wavT(x) {
+  var rect = audioWav.getBoundingClientRect();
+  var w = rect.width || 640;
+  return Math.max(0, Math.min(state.audioDur || 0, (x - rect.left) / w * (state.audioDur || 0)));
+}
+
+function drawWave() {
+  if (state.mode !== "audio" || !state.audioDur) return;
+  var w = audioWav.clientWidth || 640;
+  var h = audioWav.height || 150;
+  audioWav.width = w * 2;
+  audioWav.height = h * 2;
+  var g = audioWav.getContext("2d");
+  g.scale(2, 2);
+  g.fillStyle = "#010409";
+  g.fillRect(0, 0, w, h);
+  // 波形
+  if (audioBuf) {
+    var data = audioBuf.getChannelData(0);
+    var mid = h / 2;
+    var steps = Math.max(1, Math.floor(w / 2));
+    var samplesPer = Math.floor(data.length / state.audioDur * (state.audioDur / steps));
+    for (var i = 0; i < steps; i++) {
+      var start = Math.floor(i / steps * data.length);
+      var end = Math.floor((i + 1) / steps * data.length);
+      if (end <= start) end = start + 1;
+      var min = 1, max = -1;
+      for (var j = start; j < end; j += Math.max(1, Math.floor((end - start) / 200))) {
+        var v = data[j];
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      var x = i * (w / steps);
+      g.strokeStyle = "#58a6ff";
+      g.beginPath();
+      g.moveTo(x, mid - max * (h / 2 - 6));
+      g.lineTo(x, mid - min * (h / 2 - 6));
+      g.stroke();
+    }
+  } else {
+    // 空波形
+    g.strokeStyle = "#30363d";
+    g.beginPath();
+    g.moveTo(0, h / 2);
+    g.lineTo(w, h / 2);
+    g.stroke();
+  }
+  // 已标注片段
+  for (var s = 0; s < state.audioSegs.length; s++) {
+    var seg = state.audioSegs[s];
+    var c = getCls(seg.clsId) || { color: "#8b949e" };
+    var x0 = wavX(seg.start);
+    var x1 = wavX(seg.end);
+    g.fillStyle = c.color + "55";
+    g.fillRect(x0, 4, Math.max(2, x1 - x0), h - 8);
+    g.strokeStyle = c.color;
+    g.lineWidth = 1;
+    g.strokeRect(x0, 4, Math.max(2, x1 - x0), h - 8);
+    g.fillStyle = c.color;
+    g.font = "10px sans-serif";
+    g.fillText(getClsName(seg.clsId) + " " + fmtTime(seg.start), x0 + 3, 16);
+  }
+  // 当前播放位置
+  if (audioEl && audioEl.currentTime > 0) {
+    var px = wavX(audioEl.currentTime);
+    g.fillStyle = "#ffffff";
+    g.fillRect(px - 1, 0, 2, h);
+  }
+  // 待确认片段
+  if (state.audioPending) {
+    var px0 = wavX(state.audioPending.start);
+    var px1 = wavX(state.audioPending.end);
+    g.fillStyle = "rgba(255,209,102,.3)";
+    g.fillRect(px0, 4, Math.max(2, px1 - px0), h - 8);
+    g.strokeStyle = "#ffd166";
+    g.setLineDash([4, 3]);
+    g.strokeRect(px0, 4, Math.max(2, px1 - px0), h - 8);
+    g.setLineDash([]);
+  }
+}
+
+function bindWaveEvents() {
+  var dragging = null;
+  audioWav.addEventListener("mousedown", function(e) {
+    if (!state.audioDur) return;
+    dragging = wavT(e.clientX);
+    state.audioSel = { start: dragging, end: dragging };
+  });
+  audioWav.addEventListener("mousemove", function(e) {
+    if (dragging === null) return;
+    var t = wavT(e.clientX);
+    state.audioSel = { start: Math.min(dragging, t), end: Math.max(dragging, t) };
+    state.audioPending = { start: state.audioSel.start, end: state.audioSel.end };
+    drawWave();
+  });
+  function upWave() {
+    if (dragging === null) return;
+    if (state.audioSel && state.audioSel.end - state.audioSel.start >= 0.3) {
+      state.audioPending = { start: state.audioSel.start, end: state.audioSel.end };
+      // 自动跳到片段起点
+      if (audioEl) audioEl.currentTime = state.audioPending.start;
+      showToast("🎯 已选片段 " + fmtTime(state.audioPending.start) + " - " + fmtTime(state.audioPending.end) + ",请在下方确认");
+      renderAudioSegs();
+    } else {
+      state.audioPending = null;
+    }
+    dragging = null;
+    drawWave();
+  }
+  audioWav.addEventListener("mouseup", upWave);
+  audioWav.addEventListener("mouseleave", upWave);
+  // 点击跳转播放
+  audioWav.addEventListener("dblclick", function(e) {
+    if (audioEl && state.audioDur) {
+      audioEl.currentTime = wavT(e.clientX);
+      audioEl.play();
+    }
+  });
+}
+
+function confirmAudioSeg() {
+  if (!state.audioPending) { showToast("请先在波形上拖选一个时间段"); return; }
+  var seg = {
+    id: state.boxIdSeq++,
+    clsId: state.currentClsId,
+    start: state.audioPending.start,
+    end: state.audioPending.end,
+    text: document.getElementById("audioSegText") ? document.getElementById("audioSegText").value.trim() : ""
+  };
+  state.audioSegs.push(seg);
+  state.audioSegs.sort(function(a, b) { return a.start - b.start; });
+  state.audioPending = null;
+  var ta = document.getElementById("audioSegText");
+  if (ta) ta.value = "";
+  document.getElementById("audioPendingBar").style.display = "none";
+  saveState();
+  renderAudioSegs();
+  drawWave();
+  showToast("✅ 片段已添加: " + getClsName(seg.clsId) + " " + fmtTime(seg.start));
+}
+
+function cancelAudioSeg() {
+  state.audioPending = null;
+  document.getElementById("audioPendingBar").style.display = "none";
+  drawWave();
+  showToast("已取消选中");
+}
+
+function deleteAudioSeg(id) {
+  state.audioSegs = state.audioSegs.filter(function(s) { return s.id !== id; });
+  saveState();
+  renderAudioSegs();
+  drawWave();
+  showToast("🗑 片段已删除");
+}
+
+function renderAudioSegs() {
+  var list = document.getElementById("audioSegList");
+  var count = document.getElementById("audioSegCount");
+  var panel = document.getElementById("audioPanel");
+  var pendBar = document.getElementById("audioPendingBar");
+  if (!list) return;
+  if (state.mode !== "audio") {
+    if (panel) panel.style.display = "none";
+    return;
+  }
+  if (panel) panel.style.display = "block";
+  // 待确认条
+  if (pendBar) {
+    if (state.audioPending) {
+      pendBar.style.display = "block";
+      document.getElementById("audioPendingInfo").textContent = "待确认片段: " + fmtTime(state.audioPending.start) + " - " + fmtTime(state.audioPending.end) + " (" + (state.audioPending.end - state.audioPending.start).toFixed(1) + "s) · 当前类别: " + getClsName(state.currentClsId);
+    } else {
+      pendBar.style.display = "none";
+    }
+  }
+  if (!state.audioSegs.length) {
+    list.innerHTML = '<div style="font-size:11px;color:#8b949e;text-align:center;padding:14px;">还没有片段。在波形上按住拖选一个时间段,松开即选中。</div>';
+    if (count) count.textContent = "0 段";
+    return;
+  }
+  if (count) count.textContent = state.audioSegs.length + " 段";
+  list.innerHTML = "";
+  state.audioSegs.forEach(function(seg, idx) {
+    var c = getCls(seg.clsId) || { color: "#8b949e" };
+    var d = document.createElement("div");
+    d.style.cssText = "background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 10px;";
+    d.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+      '<span style="width:10px;height:10px;border-radius:3px;background:' + c.color + ';flex-shrink:0;"></span>' +
+      '<b style="font-size:12px;color:' + c.color + ';">' + esc(getClsName(seg.clsId)) + '</b>' +
+      '<span style="font-size:11px;color:#8b949e;">#' + seg.id + '</span>' +
+      '<span style="font-size:11px;color:#8b949e;margin-left:auto;">' + fmtTime(seg.start) + ' - ' + fmtTime(seg.end) + ' (' + (seg.end - seg.start).toFixed(1) + 's)</span>' +
+      '<button class="btn small" onclick="audioPlaySeg(' + seg.id + ')">▶</button>' +
+      '<button class="btn small warn" onclick="deleteAudioSeg(' + seg.id + ')">×</button>' +
+      '</div>' +
+      '<input type="text" value="' + esc(seg.text) + '" placeholder="转写文字/备注(ASR训练用)" style="width:100%;background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px 9px;font-size:11px;outline:none;" onchange="updateAudioSegText(' + seg.id + ',this.value)">';
+    list.appendChild(d);
+  });
+}
+
+function audioPlaySeg(id) {
+  var seg = state.audioSegs.find(function(s) { return s.id === id; });
+  if (!seg || !audioEl) return;
+  audioEl.currentTime = seg.start;
+  audioEl.play();
+  showToast("▶ 播放片段 " + fmtTime(seg.start) + " - " + fmtTime(seg.end));
+}
+
+function updateAudioSegText(id, v) {
+  var seg = state.audioSegs.find(function(s) { return s.id === id; });
+  if (seg) { seg.text = v; saveState(); }
+}
+
+/* ---------- 内置示例语音 ---------- */
+function loadDemoAudio() {
+  showToast("⏳ 正在合成示例语音(约3秒)…");
+  makeDemoAudio().then(function(blob) {
+    var url = URL.createObjectURL(blob);
+    loadAudio(url, "demo_speech.wav");
+  }).catch(function(err) {
+    showToast("生成失败: " + err.message);
+  });
+}
+
+function makeDemoAudio() {
+  return new Promise(function(resolve, reject) {
+    try {
+      var sr = 22050;
+      var dur = 4;
+      var n = sr * dur;
+      var buf = new Float32Array(n);
+      // 模拟两段语音(有声音区段) + 静音间隔
+      function speak(from, len, baseFreq) {
+        for (var i = 0; i < len; i++) {
+          var t = i / sr;
+          var env = Math.sin(Math.PI * i / len);
+          var f = baseFreq + Math.sin(t * 8) * 60;
+          buf[from + i] = (Math.sin(2 * Math.PI * f * t) * 0.5 + Math.sin(2 * Math.PI * f * 1.5 * t) * 0.25) * env;
+        }
+      }
+      speak(Math.floor(sr * 0.3), Math.floor(sr * 1.6), 180);   // 第一句
+      speak(Math.floor(sr * 2.4), Math.floor(sr * 1.3), 240);   // 第二句
+      var blob = new Blob([wavHeader(sr, n), new Uint8Array(buf.buffer)], { type: "audio/wav" });
+      resolve(blob);
+    } catch (e) { reject(e); }
+  });
+}
+
+function wavHeader(sampleRate, numSamples) {
+  var bytesPerSample = 2;
+  var blockAlign = bytesPerSample;
+  var dataSize = numSamples * bytesPerSample;
+  var buffer = new ArrayBuffer(44);
+  var view = new DataView(buffer);
+  function writeStr(off, s) { for (var i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); }
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+  return buffer;
+}
+
+/* ---------- 文本标注 (NER + 分类) ---------- */
+function loadText(content) {
+  emptyHint.style.display = "none";
+  state.mode = "text";
+  state.textContent = content;
+  state.textEnts = [];
+  state.textClsId = null;
+  canvas.style.display = "none";
+  videoEl.pause();
+  audioEl.pause();
+  audioWrap.style.display = "none";
+  document.getElementById("btnPlay").textContent = "▶";
+  document.getElementById("tabVideo").classList.remove("active");
+  document.getElementById("tabImage").classList.remove("active");
+  document.getElementById("tabAudio").classList.remove("active");
+  document.getElementById("tabText").classList.add("active");
+  document.getElementById("videoSrc").classList.add("hidden");
+  document.getElementById("imageSrc").classList.add("hidden");
+  document.getElementById("audioSrc").classList.add("hidden");
+  document.getElementById("textSrc").classList.remove("hidden");
+  renderText();
+  renderAll();
+  showToast("📝 文本已加载 (" + content.length + " 字) · 拖选文字标注实体");
+}
+
+function loadDemoText() {
+  var demo = [
+    "【客服对话示例】",
+    "王小明于2024年3月15日在杭州西湖区的华为旗舰店购买了一台Mate 60 Pro手机。",
+    "三天后他发现手机屏幕出现绿线问题,于是拨打400-830-8300联系华为客服。",
+    "客服代表李芳受理了投诉,记录订单编号HD20240318,并安排工程师张伟上门检测。",
+    "经检测确认是屏幕质量问题,华为公司同意免费换新,并将新手机寄往浙江省杭州市余杭区文一西路969号。"
+  ].join("\n");
+  loadText(demo);
+  showToast("📝 示例文本已加载 · 试试拖选「王小明」标注为人名");
+}
+
+function renderText() {
+  var box = document.getElementById("textBox");
+  var panel = document.getElementById("textPanel");
+  var ctrl = document.getElementById("controlBar");
+  if (!box) return;
+  if (state.mode !== "text") {
+    if (panel) panel.style.display = "none";
+    if (ctrl) ctrl.style.display = "";
+    return;
+  }
+  if (panel) panel.style.display = "block";
+  if (ctrl) ctrl.style.display = "none";
+  if (!state.textContent) {
+    box.innerHTML = '<div style="color:#8b949e;font-size:13px;text-align:center;padding:40px 0;">👈 请先在左侧加载文本(选择文件或内置示例)</div>';
+    return;
+  }
+  // 按start排序实体,拼HTML高亮
+  var ents = state.textEnts.slice().sort(function(a, b) { return a.start - b.start; });
+  var html = "";
+  var pos = 0;
+  for (var i = 0; i < ents.length; i++) {
+    var e = ents[i];
+    html += esc(state.textContent.slice(pos, e.start));
+    html += '<span class="text-ent" data-id="' + e.id + '" style="background:#ffd16644;border-bottom:2px solid #ffd166;border-radius:3px;cursor:pointer;" title="' + esc(e.label) + ' (点击取消)">' + esc(state.textContent.slice(e.start, e.end)) + '</span>';
+    pos = e.end;
+  }
+  html += esc(state.textContent.slice(pos));
+  box.innerHTML = html;
+  // 给实体span绑点击取消事件
+  box.querySelectorAll(".text-ent").forEach(function(sp) {
+    sp.addEventListener("click", function(ev) {
+      ev.stopPropagation();
+      var id = parseInt(sp.getAttribute("data-id"), 10);
+      deleteTextEnt(id);
+    });
+  });
+  // 文本分类条
+  renderTextClsBar();
+  // 实体列表
+  renderTextEntList();
+  // 统计
+  document.getElementById("textEntCount").textContent = state.textEnts.length + " 个实体" + (state.textClsId ? " · 分类:" + getClsName(state.textClsId) : "");
+}
+
+function renderTextClsBar() {
+  var bar = document.getElementById("textClsBar");
+  if (!bar) return;
+  bar.innerHTML = "";
+  state.classes.forEach(function(c) {
+    var b = document.createElement("button");
+    b.className = "btn small" + (state.textClsId === c.id ? " ok" : "");
+    b.style.cssText = "border-color:" + c.color + ";color:" + (state.textClsId === c.id ? "#0d1117" : c.color) + ";background:" + (state.textClsId === c.id ? c.color : "transparent") + ";";
+    b.textContent = c.name;
+    b.onclick = function() {
+      state.textClsId = (state.textClsId === c.id) ? null : c.id;
+      saveState();
+      renderText();
+      showToast(state.textClsId ? "🏷 文本分类: " + getClsName(state.textClsId) : "已取消文本分类");
+    };
+    bar.appendChild(b);
+  });
+}
+
+function renderTextEntList() {
+  var list = document.getElementById("textEntList");
+  if (!list) return;
+  list.innerHTML = "";
+  if (!state.textEnts.length) {
+    list.innerHTML = '<div style="font-size:11px;color:#8b949e;text-align:center;padding:10px;">还没有实体。在文本上拖选一段,输入类型(如:人名)即可标注。</div>';
+    return;
+  }
+  var head = document.createElement("div");
+  head.style.cssText = "font-size:11px;color:#a5b8e8;margin-bottom:4px;";
+  head.textContent = "已标注实体:";
+  list.appendChild(head);
+  state.textEnts.slice().sort(function(a, b) { return a.start - b.start; }).forEach(function(e) {
+    var d = document.createElement("div");
+    d.style.cssText = "display:flex;align-items:center;gap:8px;background:#0d1524;border:1px solid #30363d;border-radius:6px;padding:6px 10px;font-size:11px;";
+    d.innerHTML =
+      '<span style="color:#ffd166;font-weight:700;">' + esc(e.label) + '</span>' +
+      '<span style="color:#8b949e;">「' + esc(e.text) + '」</span>' +
+      '<span style="color:#6e7681;margin-left:auto;">#' + e.start + '-' + e.end + '</span>' +
+      '<button class="btn small warn" onclick="deleteTextEnt(' + e.id + ')">×</button>';
+    list.appendChild(d);
+  });
+}
+
+function textSelStart() {
+  var sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  var range = sel.getRangeAt(0);
+  var box = document.getElementById("textBox");
+  if (!box || !box.contains(range.startContainer)) return null;
+  // 计算绝对偏移: 遍历文本节点
+  function absOffset(node, offset) {
+    var total = 0;
+    var walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT, null, false);
+    while (walker.nextNode()) {
+      var n = walker.currentNode;
+      if (n === node) return total + offset;
+      total += n.textContent.length;
+    }
+    return -1;
+  }
+  var start = absOffset(range.startContainer, range.startOffset);
+  var end = absOffset(range.endContainer, range.endOffset);
+  if (start < 0 || end < 0 || start === end) return null;
+  return { start: Math.min(start, end), end: Math.max(start, end) };
+}
+
+function bindTextEvents() {
+  var box = document.getElementById("textBox");
+  if (!box) return;
+  box.addEventListener("mouseup", function() {
+    setTimeout(function() {
+      var sel = textSelStart();
+      if (!sel) return;
+      state.textSel = sel;
+      var pend = document.getElementById("textPending");
+      var selText = state.textContent.slice(sel.start, sel.end);
+      // 检查是否与已有实体重叠
+      var overlap = state.textEnts.some(function(e) {
+        return sel.start < e.end && e.start < sel.end;
+      });
+      if (overlap) {
+        document.getElementById("textPendingSel").textContent = "⚠️ 选区与已有实体重叠,请重新选择";
+        pend.style.display = "block";
+        document.getElementById("textEntLabel").value = "";
+        document.getElementById("textEntLabel").focus();
+        return;
+      }
+      document.getElementById("textPendingSel").textContent = "选中: 「" + selText.slice(0, 30) + (selText.length > 30 ? "…" : "") + "」 (" + selText.length + "字)";
+      document.getElementById("textEntLabel").value = "";
+      pend.style.display = "block";
+      document.getElementById("textEntLabel").focus();
+    }, 10);
+  });
+  box.addEventListener("mousedown", function() {
+    var pend = document.getElementById("textPending");
+    if (pend && pend.style.display === "block") pend.style.display = "none";
+  });
+}
+
+function confirmTextEnt() {
+  if (!state.textSel) { showToast("请先在文本上拖选一段文字"); return; }
+  var label = document.getElementById("textEntLabel").value.trim();
+  if (!label) { showToast("请输入实体类型,如:人名"); return; }
+  var e = {
+    id: state.boxIdSeq++,
+    start: state.textSel.start,
+    end: state.textSel.end,
+    text: state.textContent.slice(state.textSel.start, state.textSel.end),
+    label: label
+  };
+  state.textEnts.push(e);
+  state.textSel = null;
+  document.getElementById("textPending").style.display = "none";
+  window.getSelection().removeAllRanges();
+  saveState();
+  renderText();
+  showToast("✅ 已标注实体: " + label + " 「" + e.text + "」");
+}
+
+function cancelTextEnt() {
+  state.textSel = null;
+  document.getElementById("textPending").style.display = "none";
+  window.getSelection().removeAllRanges();
+}
+
+function deleteTextEnt(id) {
+  state.textEnts = state.textEnts.filter(function(e) { return e.id !== id; });
+  saveState();
+  renderText();
+  showToast("🗑 实体已取消标注");
+}
+
+function exportText() {
+  if (state.mode !== "text") { showToast("文本导出仅在文本模式下可用"); return; }
+  if (!state.textContent) { showToast("请先加载文本"); return; }
+  var ents = state.textEnts.slice().sort(function(a, b) { return a.start - b.start; }).map(function(e) {
+    return { start: e.start, end: e.end, text: e.text, label: e.label };
+  });
+  var data = {
+    tool: "AnnoFlowSmartLabel Pro",
+    type: "text",
+    classification: state.textClsId ? getClsName(state.textClsId) : null,
+    text: state.textContent,
+    entities: ents,
+    exportedAt: new Date().toISOString()
+  };
+  download(JSON.stringify(data, null, 2), "text_annotations.json", "application/json");
+  bump(4, "export");
+  showToast("文本标注已导出 (" + ents.length + " 个实体)");
+}
+
+function exportBIO() {
+  if (state.mode !== "text" || !state.textContent) { showToast("请先在文本模式下加载文本"); return; }
+  // BIO格式: 每个字符一个标签 (B-xxx实体开始, I-xxx实体中间, O其他)
+  var chars = state.textContent.split("");
+  var labels = new Array(chars.length).fill("O");
+  var ents = state.textEnts.slice().sort(function(a, b) { return a.start - b.start; });
+  for (var i = 0; i < ents.length; i++) {
+    var e = ents[i];
+    for (var j = e.start; j < e.end && j < labels.length; j++) {
+      labels[j] = (j === e.start) ? ("B-" + e.label) : ("I-" + e.label);
+    }
+  }
+  var lines = [];
+  for (var k = 0; k < chars.length; k++) {
+    var ch = chars[k];
+    if (ch === "\n") { lines.push(""); continue; }
+    lines.push(ch + "\t" + labels[k]);
+  }
+  var header = "# BIO 序列标注格式(NER训练标准) · 字符级\n# 共" + chars.length + "字符," + ents.length + "个实体\n";
+  download(header + lines.join("\n"), "text_bio.tsv", "text/plain");
+  bump(4, "export");
+  showToast("🧬 BIO格式已导出 (" + ents.length + " 个实体)");
+}
+
+/* ---------- 播放控制 ---------- */
+function togglePlay() {
+  if (state.mode === "video") {
+    if (videoEl.paused) {
+      videoEl.play();
+      document.getElementById("btnPlay").textContent = "⏸";
+      bump(1, "play");
+    } else {
+      videoEl.pause();
+      document.getElementById("btnPlay").textContent = "▶";
+    }
+  } else if (state.mode === "audio") {
+    if (!state.audioDur) { showToast("请先加载音频"); return; }
+    if (audioEl.paused) {
+      audioEl.play();
+      document.getElementById("btnPlay").textContent = "⏸";
+    } else {
+      audioEl.pause();
+      document.getElementById("btnPlay").textContent = "▶";
+    }
+  }
+}
+
+function stepFrame(dir) {
+  if (state.mode === "video") {
+    videoEl.pause();
+    document.getElementById("btnPlay").textContent = "▶";
+    var step = 1 / 25; // 25fps
+    var t = Math.max(0, Math.min((videoEl.duration || 0), videoEl.currentTime + dir * step));
+    videoEl.currentTime = t;
+    bump(1, "step");
+  } else if (state.mode === "audio") {
+    if (!state.audioDur) return;
+    audioEl.pause();
+    document.getElementById("btnPlay").textContent = "▶";
+    var s = 0.5; // 音频步进0.5秒
+    audioEl.currentTime = Math.max(0, Math.min(state.audioDur, audioEl.currentTime + dir * s));
+    drawWave();
+  }
+}
+
+function setSpeed() {
+  videoEl.playbackRate = parseFloat(document.getElementById("speedSel").value);
+  if (audioEl) audioEl.playbackRate = parseFloat(document.getElementById("speedSel").value);
+}
+
+function seekTo(t) {
+  if (state.mode === "video") {
+    videoEl.pause();
+    document.getElementById("btnPlay").textContent = "▶";
+    videoEl.currentTime = Math.max(0, Math.min((videoEl.duration || 0), t));
+  } else if (state.mode === "audio") {
+    if (!state.audioDur) return;
+    audioEl.pause();
+    document.getElementById("btnPlay").textContent = "▶";
+    audioEl.currentTime = Math.max(0, Math.min(state.audioDur, t));
+    drawWave();
+  }
+}
+
+/* ---------- 帧标注数据 ---------- */
+function frameKey() {
+  if (state.mode === "video") return state.currentTime.toFixed(2);
+  return "image";
+}
+
+function loadFrameBoxes() {
+  var k = frameKey();
+  state.boxes = (state.annotations[k] || []).map(function(b) { return JSON.parse(JSON.stringify(b)); });
+  if (state.boxes.length) {
+    if (!state.selectedBoxId || !state.boxes.some(function(b){ return b.id === state.selectedBoxId; })) {
+      state.selectedBoxId = state.boxes[0].id;
+    }
+  } else {
+    state.selectedBoxId = null;
+  }
+  renderStats();
+}
+
+function saveFrameBoxes() {
+  var k = frameKey();
+  state.annotations[k] = state.boxes.map(function(b) { return JSON.parse(JSON.stringify(b)); });
+  bump(1, "save");
+  bump(2, "box");
+  bump(4, "box");
+  saveState();
+  renderStats();
+  showToast("✅ 已保存当前帧标注 (" + state.boxes.length + " 个框)");
+}
+
+/* ---------- 画框/拖拽 ---------- */
+function canvasPos(e) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (canvas.width / rect.width),
+    y: (e.clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+
+function hitControlPoint(p, box) {
+  var pts = [
+    { x: box.x, y: box.y }, { x: box.x + box.w / 2, y: box.y }, { x: box.x + box.w, y: box.y },
+    { x: box.x, y: box.y + box.h / 2 }, { x: box.x + box.w, y: box.y + box.h / 2 },
+    { x: box.x, y: box.y + box.h }, { x: box.x + box.w / 2, y: box.y + box.h }, { x: box.x + box.w, y: box.y + box.h }
+  ];
+  var r = 8;
+  for (var i = 0; i < pts.length; i++) {
+    if (Math.abs(p.x - pts[i].x) < r && Math.abs(p.y - pts[i].y) < r) return i;
+  }
+  return -1;
+}
+
+function bindCanvasEvents() {
+  var drawing = null; // {startX, startY}
+
+  canvas.addEventListener("mousedown", function(e) {
+    if (state.mediaW === 0) return;
+    var p = canvasPos(e);
+    // 1. 命中选中框的控制点 -> 缩放
+    var sel = getSelectedBox();
+    if (sel) {
+      var pi = hitControlPoint(p, sel);
+      if (pi >= 0) {
+        state.drag = { type: "resize", boxId: sel.id, pi: pi, sx: p.x, sy: p.y, orig: JSON.parse(JSON.stringify(sel)) };
+        return;
+      }
+    }
+    // 2. 命中其他框 -> 切换选中
+    for (var j = state.boxes.length - 1; j >= 0; j--) {
+      var bb = state.boxes[j];
+      if (p.x >= bb.x && p.x <= bb.x + bb.w && p.y >= bb.y && p.y <= bb.y + bb.h) {
+        state.selectedBoxId = bb.id;
+        draw();
+        return;
+      }
+    }
+    // 3. 命中选中框内部 -> 移动
+    if (sel && p.x >= sel.x && p.x <= sel.x + sel.w && p.y >= sel.y && p.y <= sel.y + sel.h) {
+      state.drag = { type: "move", boxId: sel.id, sx: p.x, sy: p.y, orig: JSON.parse(JSON.stringify(sel)) };
+      return;
+    }
+    // 4. 空白处 -> 新画框
+    drawing = { startX: p.x, startY: p.y };
+    var nb = { id: state.boxIdSeq++, clsId: state.currentClsId, trackId: state.trackCounter, x: p.x, y: p.y, w: 0, h: 0, auto: false };
+    state.boxes.push(nb);
+    state.selectedBoxId = nb.id;
+  });
+
+  canvas.addEventListener("mousemove", function(e) {
+    if (state.mediaW === 0) return;
+    var p = canvasPos(e);
+    if (drawing) {
+      var nb = getSelectedBox();
+      if (!nb) return;
+      nb.w = p.x - drawing.startX;
+      nb.h = p.y - drawing.startY;
+      if (nb.w < 0) { nb.x = p.x; nb.w = -nb.w; }
+      if (nb.h < 0) { nb.y = p.y; nb.h = -nb.h; }
+      draw();
+      return;
+    }
+    if (state.drag) {
+      var d = state.drag;
+      var dx = p.x - d.sx, dy = p.y - d.sy;
+      var b = getBoxById(d.boxId);
+      if (!b) return;
+      if (d.type === "move") {
+        b.x = d.orig.x + dx;
+        b.y = d.orig.y + dy;
+      } else {
+        var o = d.orig, pi = d.pi;
+        if (pi === 0) { b.x = o.x + dx; b.y = o.y + dy; b.w = o.w - dx; b.h = o.h - dy; }
+        else if (pi === 1) { b.y = o.y + dy; b.h = o.h - dy; }
+        else if (pi === 2) { b.y = o.y + dy; b.w = o.w + dx; b.h = o.h - dy; }
+        else if (pi === 3) { b.x = o.x + dx; b.w = o.w - dx; }
+        else if (pi === 4) { b.w = o.w + dx; }
+        else if (pi === 5) { b.x = o.x + dx; b.w = o.w - dx; b.h = o.h + dy; }
+        else if (pi === 6) { b.h = o.h + dy; }
+        else if (pi === 7) { b.w = o.w + dx; b.h = o.h + dy; }
+        if (b.w < 4) { b.w = 4; }
+        if (b.h < 4) { b.h = 4; }
+      }
+      draw();
+      return;
+    }
+    // hover 光标提示
+    var s2 = getSelectedBox();
+    if (s2 && hitControlPoint(p, s2) >= 0) canvas.style.cursor = "nwse-resize";
+    else canvas.style.cursor = "crosshair";
+  });
+
+  function endDrag() {
+    if (drawing) {
+      var nb = getSelectedBox();
+      if (nb && nb.w > 4 && nb.h > 4) {
+        bump(1, "box");
+        bump(2, "box");
+        bump(4, "box");
+        showToast("✅ 已生成框: " + getClsName(nb.clsId) + " (track_id=" + nb.trackId + ")");
+      } else {
+        state.boxes = state.boxes.filter(function(x) { return x.id !== nb.id; });
+        state.selectedBoxId = null;
+      }
+      drawing = null;
+    }
+    state.drag = null;
+    draw();
+    renderStats();
+  }
+  canvas.addEventListener("mouseup", endDrag);
+  canvas.addEventListener("mouseleave", endDrag);
+}
+
+/* ---------- 工具函数 ---------- */
+function getBoxById(id) {
+  for (var i = 0; i < state.boxes.length; i++) if (state.boxes[i].id === id) return state.boxes[i];
+  return null;
+}
+function getSelectedBox() { return getBoxById(state.selectedBoxId); }
+function getCls(id) {
+  for (var i = 0; i < state.classes.length; i++) if (state.classes[i].id === id) return state.classes[i];
+  return null;
+}
+function getClsName(id) { var c = getCls(id); return c ? c.name : "?"; }
+
+function deleteSelectedBox() {
+  if (!state.selectedBoxId) { showToast("请先点击选中一个框再删除"); return; }
+  state.boxes = state.boxes.filter(function(b) { return b.id !== state.selectedBoxId; });
+  state.selectedBoxId = null;
+  draw();
+  renderStats();
+  showToast("🗑 已删除选中框");
+}
+
+/* ---------- 绘制 ---------- */
+function draw() {
+  if (state.mediaW === 0) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (state.mode === "video") {
+    ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+  } else if (state.imageObj) {
+    ctx.drawImage(state.imageObj, 0, 0, canvas.width, canvas.height);
+  }
+  for (var i = 0; i < state.boxes.length; i++) {
+    drawBox(state.boxes[i], state.boxes[i].id === state.selectedBoxId);
+  }
+}
+
+function drawBox(b, selected) {
+  var c = getCls(b.clsId) || { color: "#ffffff" };
+  ctx.lineWidth = selected ? 2.5 : 2;
+  if (b.auto) {
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = "#7b5cff";
+  } else {
+    ctx.setLineDash([]);
+    ctx.strokeStyle = c.color;
+  }
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  ctx.setLineDash([]);
+  // 标签
+  var label = getClsName(b.clsId) + " #" + b.trackId + (b.auto ? " (AI)" : "");
+  ctx.font = "11px sans-serif";
+  var tw = ctx.measureText(label).width;
+  var ly = (b.y - 18 < 0) ? b.y + 1 : b.y - 18;
+  ctx.fillStyle = (b.auto ? "#7b5cff" : c.color);
+  ctx.fillRect(b.x, ly, tw + 8, 16);
+  ctx.fillStyle = "#0d1117";
+  ctx.fillText(label, b.x + 4, ly + 12);
+  // 控制点
+  if (selected) {
+    ctx.fillStyle = "#ffffff";
+    var pts = [
+      [b.x, b.y], [b.x + b.w / 2, b.y], [b.x + b.w, b.y],
+      [b.x, b.y + b.h / 2], [b.x + b.w, b.y + b.h / 2],
+      [b.x, b.y + b.h], [b.x + b.w / 2, b.y + b.h], [b.x + b.w, b.y + b.h]
+    ];
+    for (var i = 0; i < pts.length; i++) {
+      ctx.fillRect(pts[i][0] - 3, pts[i][1] - 3, 6, 6);
+    }
+  }
+}
+</script>
+<script>
+"use strict";
+/* ---------- 关键帧 ---------- */
+function addKeyframe() {
+  if (state.mode !== "video") { showToast("关键帧功能仅视频模式可用"); return; }
+  if (!videoEl.duration) { showToast("请先加载视频"); return; }
+  var t = videoEl.currentTime;
+  var exists = state.keyframes.some(function(k) { return Math.abs(k.time - t) < 0.05; });
+  if (exists) { showToast("该帧已是关键帧"); return; }
+  // 抽缩略图
+  var tc = document.createElement("canvas");
+  tc.width = 160;
+  tc.height = Math.max(1, Math.round(160 * state.mediaH / state.mediaW));
+  var tctx = tc.getContext("2d");
+  try { tctx.drawImage(videoEl, 0, 0, tc.width, tc.height); } catch (e) {}
+  var thumb = "";
+  try { thumb = tc.toDataURL("image/jpeg", 0.6); } catch (e) {}
+  state.keyframes.push({ time: t, thumb: thumb, auto: false });
+  state.keyframes.sort(function(a, b) { return a.time - b.time; });
+  bump(2, "keyframe");
+  saveState();
+  showToast("★ 关键帧已添加: " + fmtTime(t));
+  renderThumbs();
+  renderTimeline();
+  renderKfSelects();
+}
+
+function removeCurrentKeyframe() {
+  if (state.mode !== "video") return;
+  var t = videoEl.currentTime;
+  var before = state.keyframes.length;
+  state.keyframes = state.keyframes.filter(function(k) { return Math.abs(k.time - t) >= 0.05; });
+  if (state.keyframes.length === before) { showToast("当前帧不是关键帧"); return; }
+  saveState();
+  showToast("已移除该关键帧(标注数据保留)");
+  renderThumbs();
+  renderTimeline();
+  renderKfSelects();
+}
+
+function removeKeyframeAt(t) {
+  state.keyframes = state.keyframes.filter(function(k) { return Math.abs(k.time - t) >= 0.05; });
+  saveState();
+  renderThumbs();
+  renderTimeline();
+  renderKfSelects();
+}
+
+/* ---------- AI 插值 ---------- */
+function doInterpolate() {
+  if (state.mode !== "video") { showToast("插值功能仅视频模式可用"); return; }
+  var startT = parseFloat(document.getElementById("interpStart").value);
+  var endT = parseFloat(document.getElementById("interpEnd").value);
+  var trackId = parseInt(document.getElementById("interpTrack").value, 10) || 1;
+  if (isNaN(startT) || isNaN(endT) || Math.abs(endT - startT) < 0.1) {
+    showToast("请选择两个不同的关键帧作为起终点");
+    return;
+  }
+  var startBox = findBoxAtFrame(startT, trackId);
+  var endBox = findBoxAtFrame(endT, trackId);
+  if (!startBox || !endBox) {
+    showToast("起点帧或终点帧缺少 track_id=" + trackId + " 的标注框,请先标注");
+    return;
+  }
+  var steps = 8;
+  var inserted = 0;
+  for (var i = 1; i < steps; i++) {
+    var ratio = i / steps;
+    var ft = startT + (endT - startT) * ratio;
+    var k = ft.toFixed(2);
+    var nb = {
+      id: state.boxIdSeq++,
+      clsId: startBox.clsId,
+      trackId: trackId,
+      x: startBox.x + (endBox.x - startBox.x) * ratio,
+      y: startBox.y + (endBox.y - startBox.y) * ratio,
+      w: startBox.w + (endBox.w - startBox.w) * ratio,
+      h: startBox.h + (endBox.h - startBox.h) * ratio,
+      auto: true
+    };
+    if (!state.annotations[k]) state.annotations[k] = [];
+    var dup = state.annotations[k].some(function(b) { return b.trackId === trackId && !b.auto; });
+    if (!dup) {
+      state.annotations[k].push(nb);
+      inserted++;
+    }
+  }
+  state.interpCount++;
+  bump(3, "interp");
+  bump(4, "interp");
+  saveState();
+  document.getElementById("interpResult").textContent = "✅ 插值完成: 生成 " + inserted + " 个中间帧标注 (track_id=" + trackId + ")";
+  showToast("⚡ AI 插值完成! 生成 " + inserted + " 个中间帧标注");
+  var curF = parseFloat(frameKey());
+  if (!isNaN(curF) && curF > startT && curF < endT) loadFrameBoxes();
+  renderAll();
+}
+
+function findBoxAtFrame(t, trackId) {
+  var k = t.toFixed(2);
+  var arr = state.annotations[k];
+  if (!arr) return null;
+  for (var i = 0; i < arr.length; i++) if (arr[i].trackId === trackId) return arr[i];
+  return null;
+}
+
+/* ---------- 类别管理 ---------- */
+function addClass() {
+  var inp = document.getElementById("newClsName");
+  var name = inp.value.trim();
+  if (!name) { showToast("请输入类别名"); return; }
+  if (state.classes.some(function(c) { return c.name === name; })) { showToast("类别已存在"); return; }
+  var colors = ["#4cc9f0", "#ffd166", "#3fb950", "#f85149", "#7b5cff", "#ff9f43", "#f472b6", "#a3e635"];
+  var id = 1;
+  while (state.classes.some(function(c) { return c.id === id; })) id++;
+  state.classes.push({ id: id, name: name, color: colors[(id - 1) % colors.length] });
+  inp.value = "";
+  saveState();
+  renderClasses();
+  showToast("类别已添加: " + name);
+}
+
+function selectCls(id) {
+  state.currentClsId = id;
+  renderClasses();
+}
+
+/* ---------- 导出 ---------- */
+function prefixName() { return (state.videoName || "anno").replace(/[^\w\u4e00-\u9fa5-]/g, "_"); }
+
+function exportJSON() {
+  var data = {
+    tool: "AnnoFlowSmartLabel Pro",
+    type: state.mode,
+    media: { name: state.videoName || "image", width: state.mediaW, height: state.mediaH },
+    classes: state.classes,
+    annotations: state.annotations,
+    keyframes: state.keyframes.map(function(k) { return { time: k.time, auto: k.auto }; }),
+    exportedAt: new Date().toISOString()
+  };
+  download(JSON.stringify(data, null, 2), prefixName() + "_annotations.json", "application/json");
+  bump(4, "export");
+  showToast("JSON 已导出");
+}
+
+/* 音频标注导出(ASR/事件检测训练用) */
+function exportAudio() {
+  if (state.mode !== "audio") { showToast("音频导出仅在音频模式下可用"); return; }
+  if (!state.audioSegs.length) { showToast("还没有音频片段标注"); return; }
+  var segs = state.audioSegs.map(function(s) {
+    var c = getCls(s.clsId);
+    return {
+      id: s.id,
+      label: c ? c.name : "unknown",
+      start: Math.round(s.start * 1000) / 1000,
+      end: Math.round(s.end * 1000) / 1000,
+      duration: Math.round((s.end - s.start) * 1000) / 1000,
+      text: s.text || ""
+    };
+  });
+  var data = {
+    tool: "AnnoFlowSmartLabel Pro",
+    type: "audio",
+    media: { name: state.audioName, duration: state.audioDur },
+    classes: state.classes,
+    segments: segs,
+    exportedAt: new Date().toISOString()
+  };
+  download(JSON.stringify(data, null, 2), prefixName() + "_audio.json", "application/json");
+  bump(4, "export");
+  showToast("音频标注已导出 (" + segs.length + " 段)");
+}
+
+function exportYOLO() {
+  var k = frameKey();
+  var arr = state.annotations[k] || state.boxes;
+  if (!arr.length) { showToast("当前帧没有标注"); return; }
+  var lines = arr.map(function(b) {
+    var xc = (b.x + b.w / 2) / state.mediaW;
+    var yc = (b.y + b.h / 2) / state.mediaH;
+    var w = b.w / state.mediaW;
+    var h = b.h / state.mediaH;
+    return (b.clsId - 1) + " " + xc.toFixed(6) + " " + yc.toFixed(6) + " " + w.toFixed(6) + " " + h.toFixed(6);
+  });
+  download(lines.join("\n"), prefixName() + "_yolo.txt", "text/plain");
+  bump(4, "export");
+  showToast("YOLO 已导出(当前帧 " + arr.length + " 个框)");
+}
+
+function exportCOCO() {
+  var images = [{ id: 1, file_name: state.videoName || "image", width: state.mediaW, height: state.mediaH }];
+  var categories = state.classes.map(function(c) { return { id: c.id, name: c.name, supercategory: "object" }; });
+  var annotations = [];
+  var aid = 1;
+  for (var k in state.annotations) {
+    var arr = state.annotations[k];
+    for (var i = 0; i < arr.length; i++) {
+      var b = arr[i];
+      annotations.push({
+        id: aid++, image_id: 1, category_id: b.clsId,
+        bbox: [Math.round(b.x), Math.round(b.y), Math.round(b.w), Math.round(b.h)],
+        area: Math.round(b.w * b.h), iscrowd: 0
+      });
+    }
+  }
+  var coco = { info: { description: "AnnoFlowSmartLabel Pro export" }, images: images, categories: categories, annotations: annotations };
+  download(JSON.stringify(coco, null, 2), prefixName() + "_coco.json", "application/json");
+  bump(4, "export");
+  showToast("COCO 已导出 (" + annotations.length + " 条标注)");
+}
+
+function exportMOT() {
+  var rows = [];
+  for (var k in state.annotations) {
+    var f = parseFloat(k);
+    if (isNaN(f)) continue;
+    var frameIdx = Math.round(f * 25);
+    var arr = state.annotations[k];
+    for (var i = 0; i < arr.length; i++) {
+      var b = arr[i];
+      rows.push([frameIdx, b.trackId, Math.round(b.x), Math.round(b.y), Math.round(b.w), Math.round(b.h), -1, -1, -1, -1].join(","));
+    }
+  }
+  if (!rows.length) { showToast("还没有任何标注数据"); return; }
+  rows.sort(function(a, b) { return parseFloat(a) - parseFloat(b); });
+  download(rows.join("\n"), prefixName() + "_mot.txt", "text/plain");
+  bump(4, "export");
+  showToast("MOT 已导出 (" + rows.length + " 行)");
+}
+
+function download(content, filename, mime) {
+  var blob = new Blob([content], { type: mime + ";charset=utf-8" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+</script>
+<script>
+"use strict";
+/* ---------- 内置示例视频(浏览器实时生成) ---------- */
+function loadDemoVideo() {
+  showToast("⏳ 正在生成示例视频(约4秒)…");
+  makeDemoVideo().then(function(blob) {
+    var url = URL.createObjectURL(blob);
+    loadVideo(url, "demo_traffic.mp4");
+  }).catch(function(err) {
+    showToast("生成失败: " + err.message);
+  });
+}
+
+function makeDemoVideo() {
+  return new Promise(function(resolve, reject) {
+    var w = 320, h = 240;
+    var c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    var g = c.getContext("2d");
+    if (typeof MediaRecorder === "undefined") { reject(new Error("浏览器不支持 MediaRecorder")); return; }
+    var rec = null;
+    try {
+      rec = new MediaRecorder(c.captureStream(25), { mimeType: "video/webm;codecs=vp9" });
+    } catch (e) {
+      try { rec = new MediaRecorder(c.captureStream(25), { mimeType: "video/webm" }); }
+      catch (e2) { reject(new Error("浏览器不支持录制 webm")); return; }
+    }
+    var chunks = [];
+    rec.ondataavailable = function(e) { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = function() { resolve(new Blob(chunks, { type: "video/webm" })); };
+    rec.onerror = function() { reject(new Error("录制失败")); };
+    var frame = 0;
+    var total = 75;
+    function drawFrame() {
+      var t = frame / total;
+      g.fillStyle = "#101820";
+      g.fillRect(0, 0, w, h);
+      // 地面线
+      g.strokeStyle = "#2a3a45";
+      g.lineWidth = 2;
+      g.beginPath(); g.moveTo(0, 195); g.lineTo(w, 195); g.stroke();
+      // 小轿车(从左向右)
+      var carX = 20 + t * 230;
+      g.fillStyle = "#4cc9f0";
+      g.fillRect(carX, 168, 52, 22);
+      g.fillStyle = "#8ae2ff";
+      g.fillRect(carX + 8, 156, 20, 14);
+      g.fillStyle = "#0d1117";
+      g.beginPath(); g.arc(carX + 12, 192, 6, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(carX + 40, 192, 6, 0, Math.PI * 2); g.fill();
+      // 小球(从上往下弹)
+      var ballY = 60 + Math.abs(Math.sin(t * Math.PI * 2)) * 90;
+      var ballX = 150 + Math.sin(t * Math.PI * 3) * 40;
+      g.fillStyle = "#ffd166";
+      g.beginPath(); g.arc(ballX, ballY, 14, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#ff9f43";
+      g.beginPath(); g.arc(ballX - 4, ballY - 4, 4, 0, Math.PI * 2); g.fill();
+      // 帧号
+      g.fillStyle = "#ffffff";
+      g.font = "12px sans-serif";
+      g.fillText("frame " + frame, 8, 16);
+    }
+    // 先预渲染一帧让 recorder 有内容
+    drawFrame();
+    rec.start(100);
+    var iv = setInterval(function() {
+      frame++;
+      if (frame >= total) {
+        clearInterval(iv);
+        setTimeout(function() { rec.stop(); }, 120);
+        return;
+      }
+      drawFrame();
+    }, 40);
+  });
+}
+
+/* ---------- 任意 AI 助手(OpenAI兼容接口) ---------- */
+var AI_CFG_STORE = "annoflow_ai_cfg";
+
+var MEM_CFG=null;
+function getAiCfg() {
+  var d = { api: "https://api.deepseek.com/v1", model: "deepseek-chat", key: "" };
+  if (MEM_CFG) { return { api: MEM_CFG.api, model: MEM_CFG.model, key: MEM_CFG.key }; }
+  try {
+    var s = localStorage.getItem(AI_CFG_STORE);
+    if (s) { var o = JSON.parse(s); if (o.api) d.api = o.api; if (o.model) d.model = o.model; if (o.key) d.key = o.key; }
+  } catch (e) {}
+  return d;
+}
+function saveAiKey() {
+  var api = document.getElementById("aiApi").value.trim() || "https://api.deepseek.com/v1";
+  var model = document.getElementById("aiModel").value.trim() || "deepseek-chat";
+  var v = document.getElementById("aiKey").value.trim();
+  var st = document.getElementById("aiKeyStatus");
+  if (!v) { st.className = "ai-key-status err"; st.textContent = "请先粘贴你的 API Key 再保存"; return; }
+  var stored=true;
+  try { localStorage.setItem(AI_CFG_STORE, JSON.stringify({ api: api, model: model, key: v })); } catch (e) { stored=false; }
+  MEM_CFG={ api: api, model: model, key: v };
+  document.getElementById("aiKey").value = "";
+  document.getElementById("aiKey").placeholder = stored?"已保存(仅存本机浏览器)":"已临时保存(当前页面可用)";
+  st.className = "ai-key-status ok";
+  st.textContent = stored
+    ? ("✅ 已保存: " + model + " · Key 仅存本机浏览器。公开访问者可填自己的 Key 使用")
+    : ("⚠️ 本浏览器禁止存储(localStorage不可用)，Key 仅当前页面有效，刷新后需重填。建议退出无痕模式。");
+}
+function loadAiCfgUI() {
+  var c = getAiCfg();
+  document.getElementById("aiApi").value = c.api;
+  document.getElementById("aiModel").value = c.model;
+  if (c.key) {
+    document.getElementById("aiKey").placeholder = "已保存(仅存本机浏览器)";
+    document.getElementById("aiKeyStatus").className = "ai-key-status ok";
+    document.getElementById("aiKeyStatus").textContent = "✅ 已配置: " + c.model + " · Key 已存在本机";
+  }
+}
+
+function collectStatsText() {
+  var byCls = {};
+  var total = 0;
+  for (var k in state.annotations) {
+    var arr = state.annotations[k];
+    for (var i = 0; i < arr.length; i++) {
+      var b = arr[i];
+      total++;
+      var n = getClsName(b.clsId);
+      byCls[n] = (byCls[n] || 0) + 1;
+    }
+  }
+  var parts = [];
+  for (var n in byCls) parts.push(n + ":" + byCls[n]);
+  return "标注总数=" + total + ", 各类别=" + parts.join("/") + ", 关键帧数=" + state.keyframes.length + ", 插值生成=" + state.interpCount + ", 模式=" + (state.mode === "video" ? "视频" : "图片");
+}
+
+function aiQuick(type) {
+  var inp = document.getElementById("aiInput");
+  if (type === "report") {
+    inp.value = "请根据以下标注统计信息,生成一份标注质检报告:分析各类别占比、可能的标注质量问题(如框太小/太大/类别不平衡)、给出改进建议。统计信息:" + collectStatsText();
+  } else if (type === "guide") {
+    inp.value = "请为我的图像/视频标注项目生成一份标注规范文档,包含:类别定义、画框规则(框应紧贴目标边界)、遮挡处理规则、track_id 分配规则、质量验收标准。";
+  } else {
+    inp.value = "我是数据标注新手,请用通俗易懂的话解释这几个概念并举例:关键帧、track_id、线性插值、COCO格式、YOLO格式、MOT格式。";
+  }
+  aiAsk();
+}
+
+function aiAsk() {
+  var cfg = getAiCfg();
+  var key = cfg.key;
+  var inp = document.getElementById("aiInput");
+  var text = inp.value.trim();
+  var st = document.getElementById("aiKeyStatus");
+  var out = document.getElementById("aiOutput");
+  var loading = document.getElementById("aiLoading");
+  if (!key) {
+    st.className = "ai-key-status err";
+    st.textContent = "⚠️ 请先在上方填入 API Key 并点「保存」";
+    return;
+  }
+  if (!text) { inp.focus(); return; }
+  var sysPrompt = [
+    "你是一位经验丰富的数据标注训练师兼 AI 应用工程师,擅长用通俗语言解答标注新手的问题。",
+    "回答要求:1. 分点、条理清晰;2. 多用生活化比喻和具体例子;3. 语气耐心、鼓励;4. 中文回答;5. 如涉及专业术语,先解释再使用;6. 控制在 300 字以内。"
+  ].join("\n");
+  out.classList.remove("show");
+  loading.classList.add("show");
+  var apiUrl = cfg.api.replace(/\/+$/, "") + "/chat/completions";
+  fetch(apiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+    body: JSON.stringify({
+      model: cfg.model,
+      messages: [{ role: "system", content: sysPrompt }, { role: "user", content: text }],
+      temperature: 0.6,
+      max_tokens: 900
+    })
+  }).then(function(resp) {
+    if (!resp.ok) {
+      var tip = "HTTP " + resp.status;
+      if (resp.status === 401) tip = "Key 无效或已过期";
+      else if (resp.status === 402) tip = "账户余额不足";
+      else if (resp.status === 429) tip = "请求太频繁,请稍等";
+      throw new Error(tip);
+    }
+    return resp.json();
+  }).then(function(data) {
+    var content = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || "").trim();
+    out.textContent = content || "(AI 返回为空,请重试)";
+    out.classList.add("show");
+  }).catch(function(err) {
+    out.textContent = "❌ 调用失败: " + (err.message || "网络异常");
+    out.classList.add("show");
+  }).finally(function() {
+    loading.classList.remove("show");
+  });
+}
+
+/* ---------- 等级系统 ---------- */
+function bump(lv, action) {
+  if (lv > state.unlocked || lv > 4) return;
+  var p = state.prog[lv];
+  if (!p) return;
+  if (action === "box") p.box++;
+  else if (action === "save") p.save++;
+  else if (action === "keyframe") p.keyframe++;
+  else if (action === "interp") p.interp++;
+  else if (action === "export") p.export++;
+  else if (action === "play") p.play = true;
+  else if (action === "step") p.step = true;
+  saveState();
+  checkLevel();
+}
+
+function checkLevel() {
+  var lv = LEVELS.find(function(x) { return x.id === state.level; });
+  if (!lv) return;
+  if (state.completed[state.level]) return;
+  if (lv.check(state.prog[state.level])) {
+    state.completed[state.level] = true;
+    state.unlocked = Math.max(state.unlocked, state.level + 1);
+    state.level = Math.min(state.unlocked, 4);
+    saveState();
+    renderAll();
+    renderLevels();
+    showModal(lv.icon, "🎉 等级完成!", "恭喜完成「" + lv.name + "」!\n" + (state.level <= 4 ? "下一关:" + LEVELS.find(function(x){ return x.id === state.level; }).name + " 已解锁" : "你已通关全部等级!"));
+  }
+  renderAll();
+  renderLevels();
+}
+
+/* ---------- 渲染 ---------- */
+function renderAll() {
+  renderClasses();
+  renderStats();
+  renderThumbs();
+  renderTimeline();
+  renderKfSelects();
+  renderTutorial();
+  renderLevels();
+  renderInterpResultCleanup();
+  renderAudioSegs();
+  renderText();
+  drawWave();
+}
+
+function renderLevels() {
+  var wrap = document.getElementById("levelChips");
+  wrap.innerHTML = "";
+  LEVELS.forEach(function(lv) {
+    var d = document.createElement("div");
+    d.className = "lv-chip";
+    if (state.completed[lv.id]) d.classList.add("done");
+    else if (lv.id === state.level) d.classList.add("active");
+    else if (lv.id > state.unlocked) d.classList.add("locked");
+    d.textContent = lv.icon + " L" + lv.id + " " + lv.name;
+    if (lv.id <= state.unlocked) d.onclick = function() { state.level = lv.id; renderAll(); renderLevels(); };
+    wrap.appendChild(d);
+  });
+}
+
+function renderClasses() {
+  var list = document.getElementById("clsList");
+  list.innerHTML = "";
+  state.classes.forEach(function(c) {
+    var d = document.createElement("div");
+    d.className = "cls-item" + (c.id === state.currentClsId ? " active" : "");
+    d.innerHTML = '<span class="cls-color" style="background:' + c.color + '"></span><span class="cls-name">' + esc(c.name) + '</span>';
+    d.onclick = function() { selectCls(c.id); };
+    list.appendChild(d);
+  });
+}
+
+function renderStats() {
+  var byCls = {};
+  var total = 0;
+  if (state.mode === "audio") {
+    // 音频模式: 统计片段
+    for (var s = 0; s < state.audioSegs.length; s++) {
+      total++;
+      var sn = getClsName(state.audioSegs[s].clsId);
+      byCls[sn] = (byCls[sn] || 0) + 1;
+    }
+    document.getElementById("stBoxes").textContent = state.audioSegs.length;
+    document.getElementById("stTotal").textContent = total;
+    document.getElementById("stKf").textContent = state.audioDur ? fmtTime(state.audioDur) : "0";
+    document.getElementById("stInterp").textContent = "-";
+  } else if (state.mode === "text") {
+    // 文本模式: 统计实体
+    for (var t = 0; t < state.textEnts.length; t++) {
+      total++;
+      var tn = state.textEnts[t].label;
+      byCls[tn] = (byCls[tn] || 0) + 1;
+    }
+    document.getElementById("stBoxes").textContent = state.textEnts.length;
+    document.getElementById("stTotal").textContent = total;
+    document.getElementById("stKf").textContent = state.textContent ? state.textContent.length + "字" : "0";
+    document.getElementById("stInterp").textContent = state.textClsId ? getClsName(state.textClsId) : "-";
+  } else {
+    for (var k in state.annotations) {
+      var arr = state.annotations[k];
+      for (var i = 0; i < arr.length; i++) {
+        total++;
+        var n = getClsName(arr[i].clsId);
+        byCls[n] = (byCls[n] || 0) + 1;
+      }
+    }
+    document.getElementById("stBoxes").textContent = state.boxes.length;
+    document.getElementById("stTotal").textContent = total;
+    document.getElementById("stKf").textContent = state.keyframes.length;
+    document.getElementById("stInterp").textContent = state.interpCount;
+  }
+  // 类别占比条
+  var bar = document.getElementById("clsBar");
+  var legend = document.getElementById("clsLegend");
+  bar.innerHTML = "";
+  legend.innerHTML = "";
+  var keys = Object.keys(byCls);
+  if (!keys.length) {
+    var hint = "还没有标注,画框后这里会显示各类别占比";
+    if (state.mode === "audio") hint = "还没有音频片段,在波形上拖选即可标注";
+    else if (state.mode === "text") hint = "还没有实体标注,拖选文本即可标注";
+    legend.innerHTML = '<span>' + hint + '</span>';
+    return;
+  }
+  keys.forEach(function(n) {
+    var c = state.classes.find(function(x) { return x.name === n; });
+    var color = c ? c.color : "#8b949e";
+    var pct = Math.round(byCls[n] / total * 100);
+    var i = document.createElement("i");
+    i.style.width = pct + "%";
+    i.style.background = color;
+    bar.appendChild(i);
+    var s = document.createElement("span");
+    s.innerHTML = '<i style="background:' + color + '"></i>' + esc(n) + ' ' + pct + '%';
+    legend.appendChild(s);
+  });
+}
+
+function renderThumbs() {
+  var list = document.getElementById("thumbList");
+  list.innerHTML = "";
+  if (state.mode !== "video") { list.style.display = "none"; return; }
+  list.style.display = "flex";
+  state.keyframes.forEach(function(k) {
+    var d = document.createElement("div");
+    d.className = "thumb" + (Math.abs(k.time - state.currentTime) < 0.03 ? " current" : "") + (k.auto ? " auto" : "");
+    var imgHtml = k.thumb ? '<img src="' + k.thumb + '" alt="kf">' : '<img src="" alt="kf" style="background:#151b23;">';
+    d.innerHTML = imgHtml + '<span class="tf">' + fmtTime(k.time) + '</span><button class="del" onclick="event.stopPropagation();removeKeyframeAt(' + k.time + ')">×</button>';
+    d.onclick = function() { seekTo(k.time); };
+    list.appendChild(d);
+  });
+}
+
+function renderTimeline() {
+  var track = document.getElementById("tlTrack");
+  var progress = document.getElementById("tlProgress");
+  var playhead = document.getElementById("tlPlayhead");
+  var scale = document.getElementById("tlScale");
+  var wrap = document.getElementById("timelineWrap");
+  if (state.mode !== "video") { if (wrap) wrap.style.display = "none"; return; }
+  if (wrap) wrap.style.display = "block";
+  var dur = (state.mode === "video" && videoEl.duration) ? videoEl.duration : 0;
+  // 移除旧关键帧标记与刻度
+  track.querySelectorAll(".tl-keyframe").forEach(function(x) { x.remove(); });
+  scale.innerHTML = "";
+  if (!dur) return;
+  var pct = Math.min(100, state.currentTime / dur * 100);
+  progress.style.width = pct + "%";
+  playhead.style.left = pct + "%";
+  // 关键帧标记
+  state.keyframes.forEach(function(k) {
+    var m = document.createElement("div");
+    m.className = "tl-keyframe";
+    m.style.left = Math.min(100, k.time / dur * 100) + "%";
+    m.title = "关键帧 " + fmtTime(k.time);
+    m.onclick = function(e) { e.stopPropagation(); seekTo(k.time); };
+    track.appendChild(m);
+  });
+  // 刻度
+  for (var i = 0; i <= 5; i++) {
+    var sp = document.createElement("span");
+    sp.style.left = (i / 5 * 100) + "%";
+    sp.textContent = fmtTime(dur * i / 5);
+    scale.appendChild(sp);
+  }
+  // 点击跳转
+  track.onclick = function(e) {
+    var rect = track.getBoundingClientRect();
+    var ratio = (e.clientX - rect.left) / rect.width;
+    seekTo(ratio * dur);
+  };
+}
+
+function renderKfSelects() {
+  var s = document.getElementById("interpStart");
+  var e = document.getElementById("interpEnd");
+  s.innerHTML = "";
+  e.innerHTML = "";
+  state.keyframes.forEach(function(k) {
+    var o1 = document.createElement("option");
+    o1.value = k.time;
+    o1.textContent = fmtTime(k.time) + (k.auto ? " (AI)" : "");
+    s.appendChild(o1);
+    var o2 = document.createElement("option");
+    o2.value = k.time;
+    o2.textContent = fmtTime(k.time) + (k.auto ? " (AI)" : "");
+    e.appendChild(o2);
+  });
+}
+
+function renderInterpResultCleanup() {
+  // 保持插值结果提示框文案,若无数据则置空
+  var el = document.getElementById("interpResult");
+  if (!state.interpCount) el.textContent = "";
+}
+
+function renderTutorial() {
+  var lv = LEVELS.find(function(x) { return x.id === state.level; });
+  if (!lv) return;
+  document.getElementById("lvName").textContent = lv.name;
+  document.getElementById("tutGoal").innerHTML = "<b>学习目标:</b> " + esc(lv.goal);
+  var wrap = document.getElementById("tutSteps");
+  wrap.innerHTML = "";
+  var p = state.prog[state.level];
+  var stepIndex = 0;
+  lv.steps.forEach(function(s, i) {
+    var d = document.createElement("div");
+    d.className = "tut-step";
+    d.innerHTML = '<div class="tut-num">' + (i + 1) + '</div><div class="tut-body"><b>' + esc(s.name) + '</b><div class="tut-tip">💡 ' + esc(s.tip) + '</div></div>';
+    wrap.appendChild(d);
+  });
+  // 高亮当前进行中的步骤
+  var doneCount = stepDoneCount(lv, p);
+  wrap.querySelectorAll(".tut-step").forEach(function(el, i) {
+    if (i < doneCount) el.classList.add("done");
+    else if (i === doneCount) el.classList.add("now");
+  });
+}
+
+function stepDoneCount(lv, p) {
+  var count = 0;
+  if (lv.id === 1) {
+    if (p.play) count++;
+    if (p.step) count++;
+    if (p.box >= 1) count++;
+    if (p.save >= 1) count++;
+    return Math.min(count, lv.steps.length);
+  }
+  if (lv.id === 2) {
+    if (state.keyframes.length >= 1) count++;
+    if (p.box >= 1) count++;
+    if (state.keyframes.length >= 2 && p.box >= 2) count++;
+    return Math.min(count, lv.steps.length);
+  }
+  if (lv.id === 3) {
+    if (p.interp >= 1) count++;
+    return Math.min(count, lv.steps.length);
+  }
+  if (lv.id === 4) {
+    if (p.box >= 3) count++;
+    if (p.interp >= 1) count++;
+    if (p.export >= 1) count++;
+    return Math.min(count, lv.steps.length);
+  }
+  return 0;
+}
+
+/* ---------- 工具 ---------- */
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function fmtTime(t) {
+  t = Math.max(0, t || 0);
+  var m = Math.floor(t / 60);
+  var s = t - m * 60;
+  return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s.toFixed(2);
+}
+var toastTimer = null;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { toastEl.classList.remove("show"); }, 2600);
+}
+function showModal(icon, title, text) {
+  document.getElementById("modalIcon").textContent = icon;
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalText").textContent = text;
+  document.getElementById("levelModal").classList.add("show");
+}
+function closeModal() {
+  document.getElementById("levelModal").classList.remove("show");
+}
+
+/* ---------- 键盘 ---------- */
+function bindKeyboard() {
+  document.addEventListener("keydown", function(e) {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+    if (e.code === "Space") {
+      e.preventDefault();
+      togglePlay();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      stepFrame(1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      stepFrame(-1);
+    } else if (e.key === "Delete" || e.key === "Backspace") {
+      if (state.mode === "audio") {
+        if (state.audioSegs.length) deleteAudioSeg(state.audioSegs[state.audioSegs.length - 1].id);
+      } else if (state.mode === "text") {
+        if (state.textEnts.length) deleteTextEnt(state.textEnts[state.textEnts.length - 1].id);
+      } else {
+        deleteSelectedBox();
+      }
+    }
+  });
+  window.addEventListener("resize", function() {
+    if (state.mediaW) resizeCanvas();
+    if (state.mode === "audio") drawWave();
+  });
+}
+
+/* ---------- 启动 ---------- */
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
